@@ -2563,7 +2563,7 @@ async function streamAgentChat(agent, message, contextMessages, send, projectId,
   if (hasAnyCloudKey && assignment) {
     // Show preferred provider as the target, actual model will be updated on success
     const prov = CLOUD_PROVIDERS[assignment.provider];
-    const modelName = prov?.models[assignment.tier] || prov?.models['fast'] || '';
+    const modelName = prov?.modelPriority?.[assignment.tier]?.[0] || prov?.modelPriority?.quality?.[0] || '';
     providerLabel = hasPreferredKey
       ? `${prov?.name || assignment.provider} · ${modelName}`
       : 'Cloud AI'; // Will be updated by agent-model-update once connected
@@ -2797,7 +2797,7 @@ async function callCloudOrOllama(agent, messages, cfg, onChunk) {
     const apiKey = cfg[providerName + 'Key'];
 
     if (provider && apiKey && apiKey.trim()) {
-      const model = provider.models[assignment.tier];
+      const model = provider.modelPriority?.[assignment.tier]?.[0] || provider.modelPriority?.quality?.[0];
       const body = JSON.stringify({
         model,
         messages,
