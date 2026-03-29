@@ -5259,7 +5259,8 @@ Base all prompts strictly on THIS scene's script, shot list, and storyboard abov
   res.end(JSON.stringify({ error: 'Not found' }));
 });
 
-const HOST = process.env.HOST || (process.env.RENDER ? '0.0.0.0' : '127.0.0.1');
+// Bind to 0.0.0.0 in cloud environments (PORT injected by Render/Railway/Fly/etc.)
+const HOST = process.env.HOST || (process.env.PORT ? '0.0.0.0' : '127.0.0.1');
 server.listen(PORT, HOST, () => {
   console.log('\n🎬  GenAI Film Studio');
   console.log('─'.repeat(38));
