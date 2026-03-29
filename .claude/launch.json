@@ -1,0 +1,1 @@
+{"version":"0.0.1","configurations":[{"name":"genai-film","runtimeExecutable":"node","runtimeArgs":["server.mjs"],"port":3000}]}

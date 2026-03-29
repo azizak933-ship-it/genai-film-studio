@@ -1,0 +1,28 @@
+{
+  "name": "genai-film-studio",
+  "version": "1.0.0",
+  "description": "AI-powered filmmaking pipeline with 32 specialized agents running locally via Ollama",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs"
+  },
+  "keywords": [
+    "ai",
+    "filmmaking",
+    "ollama",
+    "agents",
+    "genai",
+    "multi-agent"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0",
+    "duck-duck-scrape": "^2.2.7",
+    "pdf-parse": "^2.4.5"
+  }
+}

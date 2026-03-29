@@ -1,0 +1,6 @@
+node_modules/
+data/
+*.log
+server-out.txt
+server-err.txt
+test-parallel.mjs
