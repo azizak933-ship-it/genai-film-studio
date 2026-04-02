@@ -38,23 +38,23 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0a0a0f;
-      --bg2: #12121a;
-      --bg3: #1a1a26;
-      --bg4: #22223a;
-      --border: rgba(255,255,255,0.07);
-      --border2: rgba(255,255,255,0.14);
-      --text: #e8e8f0;
-      --text2: #a8a8c0;
-      --text3: #555570;
-      --accent: #ffffff;
-      --accent-dim: rgba(255,255,255,0.07);
-      --accent-border: rgba(255,255,255,0.18);
-      --danger: #ef4444;
-      --glow: rgba(255,255,255,0.03);
-      --gradient-1: #8b5cf6;
-      --gradient-2: #06b6d4;
-      --gradient-3: #ec4899;
+      --bg: #0d0020;
+      --bg2: #120028;
+      --bg3: #180030;
+      --bg4: #1e0038;
+      --border: rgba(180,140,220,0.25);
+      --border2: rgba(180,140,220,0.45);
+      --text: #e8e8ff;
+      --text2: #a890d0;
+      --text3: #6850a0;
+      --accent: #c084fc;
+      --accent-dim: rgba(192,132,252,0.15);
+      --accent-border: rgba(192,132,252,0.4);
+      --danger: #f87171;
+      --glow: rgba(192,132,252,0.08);
+      --gradient-1: #c084fc;
+      --gradient-2: #67e8f9;
+      --gradient-3: #f9a8d4;
     }
 
     html, body {
@@ -476,13 +476,13 @@
 
     #btn-send {
       position: absolute; right: 10px; bottom: 10px;
-      width: 34px; height: 34px; border-radius: 50%;
-      background: #fff; border: none; cursor: pointer;
+      width: 34px; height: 34px; border-radius: 10px;
+      background: #7c3aed; border: none; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(255,255,255,0.1);
+      transition: all 0.2s ease; box-shadow: 0 0 18px rgba(124,58,237,0.55);
     }
-    #btn-send:hover { background: #e0e0e0; transform: scale(1.05); }
-    #btn-send svg { width: 16px; height: 16px; fill: #000; }
+    #btn-send:hover { background: #6d28d9; transform: scale(1.07); box-shadow: 0 0 26px rgba(124,58,237,0.75); }
+    #btn-send svg { width: 16px; height: 16px; fill: #fff; }
 
     #btn-stop {
       position: absolute; right: 10px; bottom: 46px;
@@ -1881,29 +1881,46 @@
 .agent-mention:hover .agent-mention-tooltip { display: block; }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   MOTION ONE + MODERN UI UPGRADE
+   MODERN UI UPGRADE — overrides existing variables directly
    Inspired by: Linear, Vercel, Raycast, Perplexity, Framer
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* ── Global font upgrade ─────────────────────────────────────────────── */
+/* ── Override the actual variables this HTML uses ────────────────────── */
+:root {
+  /* Existing variables — upgraded values (pastel) */
+  --bg:      #f0e6ff !important;
+  --bg2:     #e8d5f5 !important;
+  --bg3:     #ddc4f0 !important;
+  --bg4:     #d0b0e8 !important;
+  --border:  rgba(180,140,220,0.25) !important;
+  --border2: rgba(180,140,220,0.45) !important;
+  --text:    #3d2952 !important;
+  --text2:   #7a5a95 !important;
+  --text3:   #b090c8 !important;
+  --accent:  #c084fc !important;
+  --accent-dim: rgba(192,132,252,0.15) !important;
+  --accent-border: rgba(192,132,252,0.4) !important;
+}
+
+/* ── New variables ───────────────────────────────────────────────────── */
 :root {
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  /* Refined color palette */
-  --bg-primary: #09090b;
-  --bg-secondary: #0f0f13;
-  --bg-elevated: #141418;
-  --bg-card: rgba(255,255,255,0.03);
-  --bg-card-hover: rgba(255,255,255,0.055);
-  --border-subtle: rgba(255,255,255,0.06);
-  --border-default: rgba(255,255,255,0.09);
-  --border-strong: rgba(255,255,255,0.14);
-  --text-primary: rgba(255,255,255,0.93);
-  --text-secondary: rgba(255,255,255,0.55);
-  --text-tertiary: rgba(255,255,255,0.32);
-  --accent-purple: #7c3aed;
-  --accent-purple-glow: rgba(124,58,237,0.25);
-  --accent-blue: #3b82f6;
-  --accent-teal: #14b8a6;
+  /* Refined color palette (pastel) */
+  --bg-primary: #f0e6ff;
+  --bg-secondary: #e8d5f5;
+  --bg-elevated: #ddc4f0;
+  --bg-card: rgba(255,255,255,0.4);
+  --bg-card-hover: rgba(255,255,255,0.55);
+  --border-subtle: rgba(180,140,220,0.15);
+  --border-default: rgba(180,140,220,0.25);
+  --border-strong: rgba(180,140,220,0.4);
+  --text-primary: rgba(61,41,82,0.93);
+  --text-secondary: rgba(61,41,82,0.55);
+  --text-tertiary: rgba(61,41,82,0.32);
+  --accent-purple: #c084fc;
+  --accent-purple-glow: rgba(192,132,252,0.25);
+  --accent-blue: #67e8f9;
+  --accent-teal: #5eead4;
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -1920,7 +1937,7 @@ body::before {
   left: -10vw;
   width: 55vw;
   height: 55vw;
-  background: radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(192,132,252,0.2) 0%, transparent 65%) !important;
   pointer-events: none;
   z-index: 0;
   border-radius: 50%;
@@ -1933,7 +1950,7 @@ body::after {
   right: -5vw;
   width: 40vw;
   height: 40vw;
-  background: radial-gradient(circle, rgba(20,184,166,0.05) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(103,232,249,0.15) 0%, transparent 65%) !important;
   pointer-events: none;
   z-index: 0;
   border-radius: 50%;
@@ -2306,6 +2323,429 @@ code, pre, .code-block {
   }
 }
 
+/* ── CRITICAL VISIBLE OVERRIDES (correct selectors) ───────────────────── */
+
+/* Pastel send button — real ID is #btn-send */
+#btn-send {
+  background: #c084fc !important;
+  box-shadow: 0 0 20px rgba(192,132,252,0.45) !important;
+  border-radius: 12px !important;
+  border: none !important;
+  transition: all 0.2s ease !important;
+}
+#btn-send:hover {
+  background: #a855f7 !important;
+  box-shadow: 0 0 30px rgba(192,132,252,0.6) !important;
+  transform: scale(1.06) !important;
+}
+#btn-send svg { fill: #fff !important; }
+
+/* body bg handled by storefront theme */
+/* #app bg handled by storefront theme */
+/* #main bg handled by storefront theme */
+
+/* sidebar handled by storefront theme */
+
+/* input-wrapper handled by storefront theme */
+
+/* top-nav-tabs handled by storefront theme */
+/* workflow-modes-bar handled by storefront theme */
+
+/* Active nav tab */
+#top-nav-tabs button.active, #top-nav-tabs .active {
+  color: #c084fc !important;
+  border-bottom: 2px solid #c084fc !important;
+}
+
+/* Chat items — active state */
+.chat-item.active {
+  background: rgba(192,132,252,0.15) !important;
+  border-left: 2px solid #c084fc !important;
+}
+.chat-item:hover { background: rgba(192,132,252,0.08) !important; }
+
+/* message cards handled by storefront theme */
+
+/* example cards handled by storefront theme */
+
+/* Purple scrollbar */
+* { scrollbar-width: thin; scrollbar-color: rgba(124,58,237,0.35) transparent; }
+*::-webkit-scrollbar { width: 4px; height: 4px; }
+*::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.35); border-radius: 4px; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* Input textarea */
+#chat-input {
+  caret-color: #a78bfa !important;
+}
+
+/* New Chat button */
+button[onclick="newChat()"], #btn-new-chat {
+  background: rgba(124,58,237,0.15) !important;
+  border: 1px solid rgba(124,58,237,0.3) !important;
+  color: #a78bfa !important;
+}
+button[onclick="newChat()"]:hover {
+  background: rgba(124,58,237,0.25) !important;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   STOREFRONT / DINER AESTHETIC
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Store background ─────────────────────────────────────────── */
+body {
+  background:
+    /* Wood grain overlay */
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 80px,
+      rgba(0,0,0,0.015) 80px,
+      rgba(0,0,0,0.015) 82px
+    ),
+    repeating-linear-gradient(
+      180deg,
+      transparent,
+      transparent 4px,
+      rgba(255,255,255,0.008) 4px,
+      rgba(255,255,255,0.008) 5px
+    ),
+    linear-gradient(160deg, #1a0a2e 0%, #0f0520 40%, #1a0530 70%, #0a0318 100%) !important;
+  background-attachment: fixed !important;
+}
+
+/* ── Storefront neon banner ──────────────────────────────────── */
+#storefront-banner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 10000;
+  height: 58px;
+  background: linear-gradient(180deg, #0a0015 0%, #120025 100%);
+  border-bottom: 2px solid rgba(192,132,252,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  box-shadow:
+    0 4px 30px rgba(124,58,237,0.4),
+    0 0 60px rgba(124,58,237,0.15),
+    inset 0 -1px 0 rgba(255,255,255,0.05);
+}
+
+#storefront-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 18px,
+    rgba(192,132,252,0.03) 18px,
+    rgba(192,132,252,0.03) 19px
+  );
+  pointer-events: none;
+}
+
+/* ── Neon sign text ──────────────────────────────────────────── */
+.neon-sign {
+  font-family: 'Inter', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow:
+    0 0 7px #fff,
+    0 0 14px #fff,
+    0 0 21px #c084fc,
+    0 0 42px #c084fc,
+    0 0 82px #c084fc,
+    0 0 92px #c084fc;
+  animation: neonFlicker 6s infinite;
+  position: relative;
+}
+
+.neon-sign .neon-accent {
+  color: #67e8f9;
+  text-shadow:
+    0 0 7px #fff,
+    0 0 14px #67e8f9,
+    0 0 21px #67e8f9,
+    0 0 42px #67e8f9,
+    0 0 82px #67e8f9;
+  animation: neonFlicker2 8s infinite;
+}
+
+@keyframes neonFlicker {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+    text-shadow:
+      0 0 7px #fff,
+      0 0 14px #fff,
+      0 0 21px #c084fc,
+      0 0 42px #c084fc,
+      0 0 82px #c084fc;
+    opacity: 1;
+  }
+  20%, 24%, 55% {
+    text-shadow: none;
+    opacity: 0.6;
+  }
+}
+
+@keyframes neonFlicker2 {
+  0%, 30%, 32%, 70%, 72%, 100% {
+    text-shadow:
+      0 0 7px #fff,
+      0 0 14px #67e8f9,
+      0 0 21px #67e8f9,
+      0 0 42px #67e8f9;
+    opacity: 1;
+  }
+  31%, 71% {
+    text-shadow: none;
+    opacity: 0.5;
+  }
+}
+
+/* ── Neon decorative elements ────────────────────────────────── */
+.neon-divider {
+  height: 1px;
+  flex: 1;
+  margin: 0 20px;
+  background: linear-gradient(90deg, transparent, rgba(192,132,252,0.4), rgba(103,232,249,0.4), transparent);
+  animation: neonFlicker 4s infinite;
+}
+
+.neon-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: rgba(192,132,252,0.7);
+  text-transform: uppercase;
+  border: 1px solid rgba(192,132,252,0.3);
+  padding: 3px 10px;
+  border-radius: 3px;
+  background: rgba(192,132,252,0.06);
+  animation: neonFlicker2 5s infinite;
+}
+
+/* ── Shift entire app down to make room for banner ──────────── */
+#app {
+  padding-top: 58px !important;
+}
+
+/* ── Shelf / menu board sidebar ──────────────────────────────── */
+#sidebar {
+  background:
+    linear-gradient(180deg, rgba(15,5,35,0.97) 0%, rgba(10,3,25,0.97) 100%) !important;
+  border-right: 3px solid rgba(192,132,252,0.2) !important;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.5), inset -1px 0 0 rgba(192,132,252,0.1) !important;
+  position: relative !important;
+}
+
+/* Wood shelf lines across sidebar */
+#sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0px,
+    transparent 58px,
+    rgba(192,132,252,0.06) 58px,
+    rgba(192,132,252,0.06) 60px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Sidebar section headers look like shelf labels ──────────── */
+.sidebar-section-header, .section-header {
+  font-size: 9px !important;
+  letter-spacing: 0.25em !important;
+  text-transform: uppercase !important;
+  color: rgba(192,132,252,0.5) !important;
+  padding: 8px 12px 4px !important;
+  border-bottom: 1px solid rgba(192,132,252,0.1) !important;
+  font-weight: 700 !important;
+}
+
+/* ── Chat items look like menu items on a shelf ──────────────── */
+.chat-item {
+  border-left: 2px solid transparent !important;
+  margin: 1px 6px !important;
+  border-radius: 4px !important;
+  transition: all 0.15s ease !important;
+}
+.chat-item:hover {
+  border-left-color: rgba(192,132,252,0.5) !important;
+  background: rgba(192,132,252,0.08) !important;
+  padding-left: 14px !important;
+}
+.chat-item.active {
+  border-left-color: #c084fc !important;
+  background: rgba(192,132,252,0.12) !important;
+  box-shadow: 0 0 12px rgba(192,132,252,0.2) !important;
+}
+
+/* ── Main content area — menu board feel ─────────────────────── */
+#main {
+  background: transparent !important;
+  position: relative !important;
+}
+
+/* Shelf lines across main content */
+#main::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0px,
+    transparent 118px,
+    rgba(255,255,255,0.025) 118px,
+    rgba(255,255,255,0.025) 120px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Top nav tabs look like store section dividers ───────────── */
+#top-nav-tabs {
+  background: linear-gradient(180deg, #0d0020 0%, #0a0018 100%) !important;
+  border-bottom: 2px solid rgba(192,132,252,0.2) !important;
+  box-shadow: 0 2px 20px rgba(124,58,237,0.3) !important;
+}
+
+#top-nav-tabs button {
+  font-size: 11px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  font-weight: 600 !important;
+  color: rgba(192,132,252,0.6) !important;
+  border-bottom: 2px solid transparent !important;
+  padding: 0 20px !important;
+  transition: all 0.2s !important;
+}
+#top-nav-tabs button:hover {
+  color: #c084fc !important;
+  text-shadow: 0 0 8px rgba(192,132,252,0.6) !important;
+}
+#top-nav-tabs button.active {
+  color: #fff !important;
+  border-bottom-color: #c084fc !important;
+  text-shadow: 0 0 12px rgba(192,132,252,0.8) !important;
+}
+
+/* ── Workflow mode bar — menu category strip ─────────────────── */
+#workflow-modes-bar {
+  background: linear-gradient(180deg, rgba(10,3,25,0.95) 0%, rgba(8,2,20,0.95) 100%) !important;
+  border-bottom: 1px solid rgba(192,132,252,0.12) !important;
+}
+
+/* ── Welcome screen — main menu board ───────────────────────── */
+.welcome-screen, #welcome-screen {
+  position: relative !important;
+}
+
+/* Menu board frame around welcome */
+.welcome-screen::before, #welcome-screen::before {
+  content: '';
+  position: absolute;
+  inset: 20px;
+  border: 1px solid rgba(192,132,252,0.15);
+  border-radius: 8px;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 30px rgba(124,58,237,0.05),
+    0 0 30px rgba(124,58,237,0.08);
+}
+
+/* ── Agent message cards — menu item cards ───────────────────── */
+.agent-message-card {
+  background: rgba(15,5,35,0.85) !important;
+  border: 1px solid rgba(192,132,252,0.15) !important;
+  border-left: 3px solid rgba(192,132,252,0.4) !important;
+  border-radius: 6px !important;
+  box-shadow:
+    0 2px 12px rgba(0,0,0,0.3),
+    inset 0 0 20px rgba(124,58,237,0.03) !important;
+}
+
+/* ── Input wrapper — order counter ──────────────────────────── */
+.input-wrapper {
+  background: rgba(10,3,25,0.9) !important;
+  border: 1px solid rgba(192,132,252,0.25) !important;
+  border-radius: 8px !important;
+  box-shadow:
+    0 0 0 3px rgba(192,132,252,0.06),
+    0 -4px 20px rgba(124,58,237,0.15),
+    0 8px 32px rgba(0,0,0,0.5) !important;
+}
+
+/* ── Example prompt cards — menu items on shelf ──────────────── */
+.example-card, .quick-prompt {
+  background: rgba(15,5,35,0.8) !important;
+  border: 1px solid rgba(192,132,252,0.18) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+.example-card::after, .quick-prompt::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(192,132,252,0.3), transparent);
+}
+
+/* ── Send button — order bell ───────────────────────────────── */
+#btn-send {
+  background: linear-gradient(135deg, #7c3aed, #c084fc) !important;
+  box-shadow:
+    0 0 16px rgba(192,132,252,0.5),
+    0 0 32px rgba(124,58,237,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.2) !important;
+  border-radius: 10px !important;
+}
+#btn-send:hover {
+  box-shadow:
+    0 0 24px rgba(192,132,252,0.7),
+    0 0 48px rgba(124,58,237,0.5) !important;
+  transform: scale(1.06) !important;
+}
+
+/* ── Scrollbar — neon strip ──────────────────────────────────── */
+* { scrollbar-color: rgba(192,132,252,0.4) rgba(10,3,25,0.5) !important; }
+*::-webkit-scrollbar-thumb { background: rgba(192,132,252,0.4) !important; box-shadow: 0 0 6px rgba(192,132,252,0.5) !important; }
+*::-webkit-scrollbar-track { background: rgba(10,3,25,0.5) !important; }
+
+/* ── Corner neon lamp glow ──────────────────────────────────── */
+#app::before {
+  content: '';
+  position: fixed;
+  top: 58px;
+  left: 0;
+  width: 260px;
+  height: 100%;
+  background: radial-gradient(ellipse at 0% 20%, rgba(124,58,237,0.08) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+#app::after {
+  content: '';
+  position: fixed;
+  top: 58px;
+  right: 0;
+  width: 60%;
+  height: 100%;
+  background: radial-gradient(ellipse at 100% 0%, rgba(103,232,249,0.04) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
   </style>
 </head>
 <body>
@@ -2459,6 +2899,9 @@ code, pre, .code-block {
         </button>
         <button class="top-tab arena-tab" id="tab-arena" onclick="setView('arena')">
           ⚔️ Arena
+        </button>
+        <button class="top-tab" id="tab-fox" onclick="setView('fox')">
+          🦊 Fox World
         </button>
       </div>
 
@@ -2844,6 +3287,15 @@ code, pre, .code-block {
           </div>
         </div>
       </div><!-- /view-arena -->
+
+      <!-- ═══ FOX WORLD VIEW ═══ -->
+      <div id="view-fox" class="view-panel" style="position:relative; overflow:hidden;">
+        <canvas id="fox-canvas" style="display:block; width:100%; height:100%;"></canvas>
+        <div id="fox-ui" style="position:absolute; top:20px; left:50%; transform:translateX(-50%); font-family:'Inter',sans-serif; font-size:13px; color:rgba(61,41,82,0.7); background:rgba(255,255,255,0.5); backdrop-filter:blur(12px); padding:8px 20px; border-radius:99px; border:1px solid rgba(192,132,252,0.3); pointer-events:none; white-space:nowrap;">
+          🦊 Use WASD or Arrow Keys to roam · Mouse to look around · Press F to toggle Fox/Bird view
+        </div>
+        <div id="fox-compass" style="position:absolute; bottom:30px; right:30px; width:60px; height:60px; background:rgba(255,255,255,0.4); backdrop-filter:blur(8px); border-radius:50%; border:1px solid rgba(192,132,252,0.3); display:flex; align-items:center; justify-content:center; font-size:24px; pointer-events:none;">🧭</div>
+      </div><!-- /view-fox -->
 
     </div>
   </div>
@@ -5667,15 +6119,18 @@ function setView(view) {
   document.getElementById('view-canvas')?.classList.toggle('active', view === 'canvas');
   document.getElementById('view-pipeline')?.classList.toggle('active', view === 'pipeline');
   document.getElementById('view-arena')?.classList.toggle('active', view === 'arena');
+  document.getElementById('view-fox')?.classList.toggle('active', view === 'fox');
   // Update tab active states
   document.getElementById('tab-chat')?.classList.toggle('active', view === 'chat');
   document.getElementById('tab-canvas')?.classList.toggle('active', view === 'canvas');
   document.getElementById('tab-pipeline')?.classList.toggle('active', view === 'pipeline');
   document.getElementById('tab-arena')?.classList.toggle('active', view === 'arena');
+  document.getElementById('tab-fox')?.classList.toggle('active', view === 'fox');
   if (view === 'chat') { currentWorkflowId = null; renderWorkflowList(); }
   if (view === 'canvas' && typeof lucide !== 'undefined') lucide.createIcons();
   if (view === 'pipeline') { if (typeof lucide !== 'undefined') lucide.createIcons(); if (typeof pipLoadHistory === 'function') pipLoadHistory(); }
   if (view === 'arena') { if (typeof renderArenaAgentGrid === 'function') renderArenaAgentGrid(); if (typeof loadDebateWinners === 'function') loadDebateWinners(); }
+  if (view === 'fox') { setTimeout(function() { if (typeof initFoxWorld === 'function') initFoxWorld(); }, 100); }
 }
 
 // View switching is handled inside selectProject directly
@@ -7951,6 +8406,906 @@ if (chatMessages) {
 }
 
 console.log('Motion One loaded');
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//  FOX WORLD — Pastel 3D Free-Roam Game
+// ═══════════════════════════════════════════════════════════════════
+let foxWorldInitialized = false;
+let foxAnimFrame = null;
+
+function initFoxWorld() {
+  if (foxWorldInitialized) return;
+  foxWorldInitialized = true;
+
+  const canvas = document.getElementById('fox-canvas');
+  if (!canvas || typeof THREE === 'undefined') return;
+
+  // Renderer
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.setClearColor(0xfce7f3, 1);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0xfce7f3, 0.018);
+
+  const camera = new THREE.PerspectiveCamera(70, canvas.offsetWidth / canvas.offsetHeight, 0.1, 300);
+  camera.position.set(0, 1.2, 0);
+
+  // ── LIGHTING ──────────────────────────────────────────────────────
+  const ambientLight = new THREE.AmbientLight(0xfff0f5, 0.8);
+  scene.add(ambientLight);
+
+  const sunLight = new THREE.DirectionalLight(0xffd6e8, 1.4);
+  sunLight.position.set(50, 80, 30);
+  sunLight.castShadow = true;
+  sunLight.shadow.mapSize.width = 2048;
+  sunLight.shadow.mapSize.height = 2048;
+  sunLight.shadow.camera.near = 0.5;
+  sunLight.shadow.camera.far = 300;
+  sunLight.shadow.camera.left = -100;
+  sunLight.shadow.camera.right = 100;
+  sunLight.shadow.camera.top = 100;
+  sunLight.shadow.camera.bottom = -100;
+  scene.add(sunLight);
+
+  const fillLight = new THREE.DirectionalLight(0xc4b5fd, 0.4);
+  fillLight.position.set(-30, 20, -20);
+  scene.add(fillLight);
+
+  // ── SKY GRADIENT (dome) ───────────────────────────────────────────
+  const skyGeo = new THREE.SphereGeometry(250, 32, 16);
+  const skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    uniforms: {
+      topColor:    { value: new THREE.Color(0xc4b5fd) },
+      bottomColor: { value: new THREE.Color(0xfce7f3) },
+      offset:      { value: 30 },
+      exponent:    { value: 0.5 },
+    },
+    vertexShader: `
+      varying vec3 vWorldPos;
+      void main() {
+        vec4 wp = modelMatrix * vec4(position, 1.0);
+        vWorldPos = wp.xyz;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 topColor;
+      uniform vec3 bottomColor;
+      uniform float offset;
+      uniform float exponent;
+      varying vec3 vWorldPos;
+      void main() {
+        float h = normalize(vWorldPos + offset).y;
+        gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);
+      }
+    `,
+  });
+  scene.add(new THREE.Mesh(skyGeo, skyMat));
+
+  // ── TERRAIN ───────────────────────────────────────────────────────
+  const terrainSize = 200;
+  const terrainSegs = 80;
+  const terrainGeo = new THREE.PlaneGeometry(terrainSize, terrainSize, terrainSegs, terrainSegs);
+  terrainGeo.rotateX(-Math.PI / 2);
+
+  // Gentle rolling hills
+  const pos = terrainGeo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const z = pos.getZ(i);
+    const y = Math.sin(x * 0.08) * 2.5
+            + Math.cos(z * 0.06) * 2.0
+            + Math.sin((x + z) * 0.04) * 1.5
+            + Math.sin(x * 0.15 + z * 0.12) * 0.8;
+    pos.setY(i, y);
+  }
+  terrainGeo.computeVertexNormals();
+
+  const terrainMat = new THREE.MeshLambertMaterial({ color: 0xa7f3d0 });
+  const terrain = new THREE.Mesh(terrainGeo, terrainMat);
+  terrain.receiveShadow = true;
+  scene.add(terrain);
+
+  // Helper: get terrain Y at world XZ
+  function getTerrainY(x, z) {
+    return Math.sin(x * 0.08) * 2.5
+         + Math.cos(z * 0.06) * 2.0
+         + Math.sin((x + z) * 0.04) * 1.5
+         + Math.sin(x * 0.15 + z * 0.12) * 0.8;
+  }
+
+  // ── FLOWERS ───────────────────────────────────────────────────────
+  const flowerColors = [0xfb7185, 0xf9a8d4, 0xfde68a, 0xc084fc, 0xa5f3fc];
+  for (let i = 0; i < 300; i++) {
+    const x = (Math.random() - 0.5) * 180;
+    const z = (Math.random() - 0.5) * 180;
+    const y = getTerrainY(x, z);
+    const stemH = 0.3 + Math.random() * 0.4;
+    const stemGeo = new THREE.CylinderGeometry(0.02, 0.02, stemH, 4);
+    const stemMat = new THREE.MeshLambertMaterial({ color: 0x86efac });
+    const stem = new THREE.Mesh(stemGeo, stemMat);
+    stem.position.set(x, y + stemH / 2, z);
+    scene.add(stem);
+
+    const headGeo = new THREE.SphereGeometry(0.12 + Math.random() * 0.08, 6, 6);
+    const headMat = new THREE.MeshLambertMaterial({ color: flowerColors[Math.floor(Math.random() * flowerColors.length)] });
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.position.set(x, y + stemH + 0.1, z);
+    scene.add(head);
+  }
+
+  // ── TREES ─────────────────────────────────────────────────────────
+  function addTree(x, z) {
+    const y = getTerrainY(x, z);
+    const trunkH = 1.5 + Math.random() * 1.5;
+    const trunkGeo = new THREE.CylinderGeometry(0.12, 0.18, trunkH, 6);
+    const trunkMat = new THREE.MeshLambertMaterial({ color: 0xd4a574 });
+    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+    trunk.position.set(x, y + trunkH / 2, z);
+    trunk.castShadow = true;
+    scene.add(trunk);
+
+    const leafColors = [0x86efac, 0xa7f3d0, 0xbbf7d0, 0x6ee7b7];
+    const layers = 2 + Math.floor(Math.random() * 2);
+    for (let l = 0; l < layers; l++) {
+      const r = (1.2 - l * 0.25) * (0.8 + Math.random() * 0.4);
+      const leafGeo = new THREE.SphereGeometry(r, 7, 5);
+      const leafMat = new THREE.MeshLambertMaterial({ color: leafColors[l % leafColors.length] });
+      const leaves = new THREE.Mesh(leafGeo, leafMat);
+      leaves.position.set(
+        x + (Math.random() - 0.5) * 0.4,
+        y + trunkH + l * 0.6 + r * 0.5,
+        z + (Math.random() - 0.5) * 0.4
+      );
+      leaves.castShadow = true;
+      scene.add(leaves);
+    }
+  }
+  for (let i = 0; i < 80; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const r = 8 + Math.random() * 80;
+    addTree(Math.cos(a) * r, Math.sin(a) * r);
+  }
+
+  // ── 3D CLOUDS ────────────────────────────────────────────────────
+  const cloudColors = [0xfce7f3, 0xe9d5ff, 0xcffafe, 0xfef9c3];
+  const cloudMeshes = [];
+  for (let c = 0; c < 20; c++) {
+    const group = new THREE.Group();
+    const numPuffs = 3 + Math.floor(Math.random() * 4);
+    const cloudCol = cloudColors[Math.floor(Math.random() * cloudColors.length)];
+    for (let p = 0; p < numPuffs; p++) {
+      const r = 3 + Math.random() * 4;
+      const geo = new THREE.SphereGeometry(r, 7, 5);
+      const mat = new THREE.MeshLambertMaterial({ color: cloudCol, transparent: true, opacity: 0.88 });
+      const puff = new THREE.Mesh(geo, mat);
+      puff.position.set(
+        (Math.random() - 0.5) * 8,
+        (Math.random() - 0.5) * 2,
+        (Math.random() - 0.5) * 5
+      );
+      puff.scale.y = 0.55;
+      group.add(puff);
+    }
+    group.position.set(
+      (Math.random() - 0.5) * 180,
+      25 + Math.random() * 30,
+      (Math.random() - 0.5) * 180
+    );
+    group._speed = 0.01 + Math.random() * 0.02;
+    group._dir   = Math.random() > 0.5 ? 1 : -1;
+    scene.add(group);
+    cloudMeshes.push(group);
+  }
+
+  // ── FOX BODY (simple geometry fox) ───────────────────────────────
+  const foxGroup = new THREE.Group();
+
+  // Body
+  const bodyGeo = new THREE.CapsuleGeometry(0.28, 0.55, 4, 8);
+  const bodyMat = new THREE.MeshLambertMaterial({ color: 0xfb923c });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.rotation.x = Math.PI / 2;
+  body.position.y = 0.35;
+  foxGroup.add(body);
+
+  // Head
+  const headGeo = new THREE.SphereGeometry(0.22, 8, 8);
+  const headMat = new THREE.MeshLambertMaterial({ color: 0xfb923c });
+  const head = new THREE.Mesh(headGeo, headMat);
+  head.position.set(0, 0.7, 0.42);
+  foxGroup.add(head);
+
+  // Snout
+  const snoutGeo = new THREE.ConeGeometry(0.1, 0.22, 8);
+  const snoutMat = new THREE.MeshLambertMaterial({ color: 0xfedcba });
+  const snout = new THREE.Mesh(snoutGeo, snoutMat);
+  snout.rotation.x = Math.PI / 2;
+  snout.position.set(0, 0.65, 0.65);
+  foxGroup.add(snout);
+
+  // Ears
+  const earGeo = new THREE.ConeGeometry(0.09, 0.22, 4);
+  const earMat = new THREE.MeshLambertMaterial({ color: 0xfb923c });
+  [-0.14, 0.14].forEach(ex => {
+    const ear = new THREE.Mesh(earGeo, earMat);
+    ear.position.set(ex, 0.95, 0.38);
+    ear.rotation.z = ex < 0 ? 0.3 : -0.3;
+    foxGroup.add(ear);
+  });
+
+  // Tail
+  const tailGeo = new THREE.TorusGeometry(0.25, 0.09, 8, 16, Math.PI * 1.2);
+  const tailMat = new THREE.MeshLambertMaterial({ color: 0xfb923c });
+  const tail = new THREE.Mesh(tailGeo, tailMat);
+  tail.position.set(0, 0.3, -0.55);
+  tail.rotation.x = -0.6;
+  foxGroup.add(tail);
+
+  // White tail tip
+  const tailTipGeo = new THREE.SphereGeometry(0.12, 6, 6);
+  const tailTipMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+  const tailTip = new THREE.Mesh(tailTipGeo, tailTipMat);
+  tailTip.position.set(0, 0.55, -0.72);
+  foxGroup.add(tailTip);
+
+  foxGroup.position.set(0, 0, 0);
+  scene.add(foxGroup);
+
+  // ── CONTROLS ──────────────────────────────────────────────────────
+  const keys = {};
+  let yaw = 0;   // horizontal look
+  let pitch = 0; // vertical look (clamped)
+  let isPointerLocked = false;
+  let birdView = false;
+  let birdY = 30;
+
+  canvas.addEventListener('click', () => {
+    canvas.requestPointerLock();
+  });
+
+  document.addEventListener('pointerlockchange', () => {
+    isPointerLocked = document.pointerLockElement === canvas;
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isPointerLocked) return;
+    yaw   -= e.movementX * 0.002;
+    pitch -= e.movementY * 0.002;
+    pitch  = Math.max(-Math.PI / 3, Math.min(Math.PI / 6, pitch));
+  });
+
+  window.addEventListener('keydown', (e) => {
+    keys[e.code] = true;
+    if (e.code === 'KeyF') {
+      birdView = !birdView;
+    }
+  });
+  window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+  // ── GAME LOOP ─────────────────────────────────────────────────────
+  const foxPos = new THREE.Vector3(0, 0, 0);
+  const velocity = new THREE.Vector3();
+  let tailWag = 0;
+  let legAnim = 0;
+  let isMoving = false;
+  const clock2 = new THREE.Clock();
+
+  function foxLoop() {
+    foxAnimFrame = requestAnimationFrame(foxLoop);
+    const dt = Math.min(clock2.getDelta(), 0.05);
+    const speed = 6;
+    isMoving = false;
+
+    // Movement direction
+    const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+    const right   = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+    const move    = new THREE.Vector3();
+
+    if (keys['KeyW'] || keys['ArrowUp'])    { move.add(forward); isMoving = true; }
+    if (keys['KeyS'] || keys['ArrowDown'])  { move.sub(forward); isMoving = true; }
+    if (keys['KeyA'] || keys['ArrowLeft'])  { move.sub(right);   isMoving = true; }
+    if (keys['KeyD'] || keys['ArrowRight']) { move.add(right);   isMoving = true; }
+
+    if (move.length() > 0) {
+      move.normalize().multiplyScalar(speed * dt);
+      foxPos.add(move);
+      // Clamp to terrain bounds
+      foxPos.x = Math.max(-90, Math.min(90, foxPos.x));
+      foxPos.z = Math.max(-90, Math.min(90, foxPos.z));
+    }
+
+    // Snap fox to terrain
+    const groundY = getTerrainY(foxPos.x, foxPos.z);
+    foxPos.y = groundY;
+
+    // Fox mesh
+    foxGroup.position.set(foxPos.x, foxPos.y, foxPos.z);
+    foxGroup.rotation.y = yaw;
+
+    // Animate tail wag
+    tailWag += dt * (isMoving ? 8 : 2);
+    tail.rotation.z = Math.sin(tailWag) * (isMoving ? 0.5 : 0.2);
+
+    // Leg bounce (body bob)
+    if (isMoving) {
+      legAnim += dt * 10;
+      body.position.y = 0.35 + Math.abs(Math.sin(legAnim)) * 0.06;
+      head.position.y = 0.7  + Math.abs(Math.sin(legAnim)) * 0.04;
+    }
+
+    // Drift clouds
+    cloudMeshes.forEach(cloud => {
+      cloud.position.x += cloud._speed * cloud._dir;
+      if (cloud.position.x > 100)  cloud.position.x = -100;
+      if (cloud.position.x < -100) cloud.position.x =  100;
+    });
+
+    // Camera
+    if (birdView) {
+      // Bird's eye view
+      camera.position.set(foxPos.x, foxPos.y + birdY, foxPos.z + 10);
+      camera.lookAt(foxPos.x, foxPos.y, foxPos.z);
+    } else {
+      // Fox third-person follow camera
+      const camDist  = 3.5;
+      const camH     = 1.8;
+      const camX = foxPos.x - Math.sin(yaw) * camDist;
+      const camZ = foxPos.z - Math.cos(yaw) * camDist;
+      const camY = foxPos.y + camH;
+      camera.position.set(camX, camY, camZ);
+      // Look target based on pitch
+      const lookTarget = new THREE.Vector3(
+        foxPos.x + Math.sin(yaw)   * 10,
+        foxPos.y + camH + Math.sin(pitch) * 10,
+        foxPos.z + Math.cos(yaw)   * 10
+      );
+      camera.lookAt(lookTarget);
+    }
+
+    // Resize
+    if (canvas.offsetWidth !== renderer.domElement.width || canvas.offsetHeight !== renderer.domElement.height) {
+      renderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
+      camera.aspect = canvas.offsetWidth / canvas.offsetHeight;
+      camera.updateProjectionMatrix();
+    }
+
+    renderer.render(scene, camera);
+  }
+
+  foxLoop();
+}
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     KODE IMMERSIVE STYLE — GSAP + Three.js + Lenis + Custom Cursor
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<!-- GSAP + plugins -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/TextPlugin.min.js"></script>
+
+<!-- Lenis smooth scroll -->
+<script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+
+<!-- Three.js for particle background -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+
+<style>
+/* ── Custom Cursor ────────────────────────────────────────────────── */
+* { cursor: none !important; }
+#custom-cursor {
+  position: fixed;
+  width: 12px; height: 12px;
+  background: #7c3aed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 999999;
+  transform: translate(-50%, -50%);
+  transition: width 0.2s ease, height 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+  mix-blend-mode: normal;
+  box-shadow: 0 0 12px rgba(124,58,237,0.8), 0 0 24px rgba(124,58,237,0.4);
+}
+#custom-cursor-ring {
+  position: fixed;
+  width: 36px; height: 36px;
+  border: 1px solid rgba(124,58,237,0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 999998;
+  transform: translate(-50%, -50%);
+  transition: width 0.35s ease, height 0.35s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+#custom-cursor.hovering {
+  width: 6px; height: 6px;
+  background: #a78bfa;
+}
+#custom-cursor-ring.hovering {
+  width: 52px; height: 52px;
+  border-color: rgba(167,139,250,0.6);
+  border-width: 1.5px;
+}
+#custom-cursor.clicking {
+  width: 8px; height: 8px;
+  box-shadow: 0 0 20px rgba(124,58,237,1), 0 0 40px rgba(124,58,237,0.6);
+}
+
+/* ── Three.js particle canvas ─────────────────────────────────────── */
+#particle-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.55;
+}
+
+/* ── Everything above the canvas ─────────────────────────────────── */
+#app { position: relative; z-index: 1; }
+
+/* ── Text reveal animation ────────────────────────────────────────── */
+.char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(30px) rotateX(-90deg);
+  transform-origin: top center;
+}
+
+/* ── Glitch flicker on title ──────────────────────────────────────── */
+@keyframes glitch {
+  0%, 100% { text-shadow: none; transform: none; }
+  92% { text-shadow: none; transform: none; }
+  93% { text-shadow: -2px 0 #7c3aed, 2px 0 #06b6d4; transform: skewX(-1deg); }
+  94% { text-shadow: none; transform: none; }
+  96% { text-shadow: -1px 0 #a78bfa; transform: skewX(0.5deg); }
+  97% { text-shadow: none; transform: none; }
+}
+.glitch-text {
+  animation: glitch 6s infinite;
+}
+
+/* ── Magnetic button effect ────────────────────────────────────────── */
+.magnetic { transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1); }
+
+/* ── Pastel Clouds ─────────────────────────────────────────────── */
+.cloud-layer {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.cloud {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.35;
+  animation: cloudDrift linear infinite;
+}
+.cloud-1 { width: 600px; height: 200px; background: #fce7f3; top: 5%; left: -10%; animation-duration: 40s; }
+.cloud-2 { width: 400px; height: 150px; background: #e9d5ff; top: 15%; left: 30%; animation-duration: 55s; animation-delay: -20s; }
+.cloud-3 { width: 500px; height: 180px; background: #cffafe; top: 8%; left: 60%; animation-duration: 48s; animation-delay: -10s; }
+.cloud-4 { width: 350px; height: 120px; background: #fef9c3; top: 25%; left: -5%; animation-duration: 62s; animation-delay: -30s; }
+.cloud-5 { width: 450px; height: 160px; background: #d1fae5; top: 20%; left: 80%; animation-duration: 35s; animation-delay: -5s; }
+@keyframes cloudDrift {
+  from { transform: translateX(0px) translateY(0px); }
+  33%  { transform: translateX(60px) translateY(-20px); }
+  66%  { transform: translateX(-30px) translateY(15px); }
+  to   { transform: translateX(0px) translateY(0px); }
+}
+
+/* ── Noise overlay ─────────────────────────────────────────────────── */
+#noise-overlay {
+  position: fixed;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: noiseAnim 0.15s steps(1) infinite;
+}
+@keyframes noiseAnim {
+  0%   { transform: translate(0, 0); }
+  10%  { transform: translate(-2%, -3%); }
+  20%  { transform: translate(3%, 1%); }
+  30%  { transform: translate(-1%, 4%); }
+  40%  { transform: translate(4%, -2%); }
+  50%  { transform: translate(-3%, 3%); }
+  60%  { transform: translate(2%, -4%); }
+  70%  { transform: translate(-4%, 1%); }
+  80%  { transform: translate(1%, 3%); }
+  90%  { transform: translate(-2%, -1%); }
+  100% { transform: translate(3%, 2%); }
+}
+
+/* ── Page load overlay ─────────────────────────────────────────────── */
+#page-loader {
+  position: fixed;
+  inset: 0;
+  background: #0a0015;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 20px;
+}
+#page-loader .loader-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(192,132,252,0.5);
+}
+#page-loader .loader-bar-wrap {
+  width: 180px; height: 1px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 1px;
+  overflow: hidden;
+}
+#page-loader .loader-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #c084fc, #67e8f9);
+  width: 0%;
+  border-radius: 1px;
+}
+
+/* ── Scroll progress line ──────────────────────────────────────────── */
+#scroll-progress-line {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  width: 0%;
+  background: linear-gradient(90deg, #7c3aed, #a78bfa, #06b6d4);
+  z-index: 99998;
+  pointer-events: none;
+  box-shadow: 0 0 8px rgba(124,58,237,0.6);
+  transition: width 0.1s linear;
+}
+</style>
+
+<script>
+(function() {
+  'use strict';
+
+  // ── DOM elements injected immediately ──────────────────────────────
+  document.body.insertAdjacentHTML('afterbegin', `
+    <div id="storefront-banner">
+      <div class="neon-sign">🎬 <span>Film</span> <span class="neon-accent">Studio</span></div>
+      <div class="neon-divider"></div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="neon-badge">Est. 2025</span>
+        <span class="neon-badge" style="color:rgba(103,232,249,0.7);border-color:rgba(103,232,249,0.3);">42 Agents</span>
+        <span class="neon-badge" style="animation-delay:1s;">Open 24/7</span>
+      </div>
+    </div>
+    <div class="cloud-layer">
+      <div class="cloud cloud-1"></div>
+      <div class="cloud cloud-2"></div>
+      <div class="cloud cloud-3"></div>
+      <div class="cloud cloud-4"></div>
+      <div class="cloud cloud-5"></div>
+    </div>
+    <div id="page-loader">
+      <div class="loader-text">Initializing Studio</div>
+      <div class="loader-bar-wrap"><div class="loader-bar" id="loader-bar"></div></div>
+    </div>
+    <div id="noise-overlay"></div>
+    <div id="scroll-progress-line"></div>
+    <div id="custom-cursor"></div>
+    <div id="custom-cursor-ring"></div>
+    <canvas id="particle-canvas"></canvas>
+  `);
+
+  // ── Wait for everything ────────────────────────────────────────────
+  window.addEventListener('load', function() {
+
+    // ── LOADER ANIMATION ──────────────────────────────────────────────
+    const loaderBar = document.getElementById('loader-bar');
+    const loader = document.getElementById('page-loader');
+    let progress = 0;
+    const loadInterval = setInterval(() => {
+      progress += Math.random() * 18;
+      if (progress >= 100) {
+        progress = 100;
+        clearInterval(loadInterval);
+        loaderBar.style.width = '100%';
+        setTimeout(() => {
+          gsap.to(loader, {
+            yPercent: -100,
+            duration: 0.9,
+            ease: 'power3.inOut',
+            onComplete: () => { loader.remove(); initAnimations(); }
+          });
+        }, 300);
+      }
+      loaderBar.style.width = progress + '%';
+    }, 80);
+
+    function initAnimations() {
+
+      // ── GSAP SETUP ───────────────────────────────────────────────────
+      gsap.registerPlugin(ScrollTrigger, TextPlugin);
+
+      // ── LENIS SMOOTH SCROLL ──────────────────────────────────────────
+      let lenis;
+      try {
+        lenis = new Lenis({
+          duration: 1.3,
+          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+          orientation: 'vertical',
+          smoothWheel: true,
+        });
+        function raf(time) {
+          lenis.raf(time);
+          ScrollTrigger.update();
+          requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+      } catch(e) { console.log('Lenis not available'); }
+
+      // ── THREE.JS PARTICLE BACKGROUND ────────────────────────────────
+      try {
+        const canvas = document.getElementById('particle-canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 0);
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 3;
+
+        // Film strip / star particles
+        const count = 1800;
+        const positions = new Float32Array(count * 3);
+        const colors = new Float32Array(count * 3);
+        const sizes = new Float32Array(count);
+
+        const colorOptions = [
+          new THREE.Color('#f9a8d4'),
+          new THREE.Color('#c084fc'),
+          new THREE.Color('#a5f3fc'),
+          new THREE.Color('#fde68a'),
+          new THREE.Color('#bbf7d0'),
+        ];
+
+        for (let i = 0; i < count; i++) {
+          positions[i * 3]     = (Math.random() - 0.5) * 12;
+          positions[i * 3 + 1] = (Math.random() - 0.5) * 12;
+          positions[i * 3 + 2] = (Math.random() - 0.5) * 8;
+          const c = colorOptions[Math.floor(Math.random() * colorOptions.length)];
+          colors[i * 3]     = c.r;
+          colors[i * 3 + 1] = c.g;
+          colors[i * 3 + 2] = c.b;
+          sizes[i] = Math.random() * 3 + 0.5;
+        }
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+        const mat = new THREE.PointsMaterial({
+          size: 0.02,
+          vertexColors: true,
+          transparent: true,
+          opacity: 0.7,
+          sizeAttenuation: true,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        });
+
+        const particles = new THREE.Points(geo, mat);
+        scene.add(particles);
+
+        // Mouse influence
+        let mouseX = 0, mouseY = 0;
+        document.addEventListener('mousemove', (e) => {
+          mouseX = (e.clientX / window.innerWidth  - 0.5) * 0.4;
+          mouseY = (e.clientY / window.innerHeight - 0.5) * 0.4;
+        });
+
+        // Resize
+        window.addEventListener('resize', () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Animate
+        let clock = new THREE.Clock();
+        function animateParticles() {
+          requestAnimationFrame(animateParticles);
+          const t = clock.getElapsedTime();
+          particles.rotation.y = t * 0.04 + mouseX * 0.3;
+          particles.rotation.x = t * 0.02 + mouseY * 0.2;
+          // Drift individual particles
+          const pos = geo.attributes.position;
+          for (let i = 0; i < count; i += 6) {
+            pos.array[i * 3 + 1] -= 0.001;
+            if (pos.array[i * 3 + 1] < -6) pos.array[i * 3 + 1] = 6;
+          }
+          pos.needsUpdate = true;
+          renderer.render(scene, camera);
+        }
+        animateParticles();
+      } catch(e) { console.log('Three.js particles error:', e); }
+
+      // ── CUSTOM CURSOR ────────────────────────────────────────────────
+      const cursor = document.getElementById('custom-cursor');
+      const ring   = document.getElementById('custom-cursor-ring');
+      if (cursor && ring) {
+        let cx = 0, cy = 0, rx = 0, ry = 0;
+        document.addEventListener('mousemove', (e) => {
+          cx = e.clientX; cy = e.clientY;
+          gsap.to(cursor, { x: cx, y: cy, duration: 0.1, ease: 'power2.out' });
+        });
+        // Ring follows with lag
+        function updateRing() {
+          rx += (cx - rx) * 0.1;
+          ry += (cy - ry) * 0.1;
+          gsap.set(ring, { x: rx, y: ry });
+          requestAnimationFrame(updateRing);
+        }
+        updateRing();
+        // Hover states
+        document.addEventListener('mouseover', (e) => {
+          if (e.target.closest('button, a, input, textarea, select, [onclick], .chat-item, .agent-list-item, .example-card, .quick-prompt')) {
+            cursor.classList.add('hovering');
+            ring.classList.add('hovering');
+          }
+        });
+        document.addEventListener('mouseout', (e) => {
+          if (e.target.closest('button, a, input, textarea, select, [onclick], .chat-item, .agent-list-item, .example-card, .quick-prompt')) {
+            cursor.classList.remove('hovering');
+            ring.classList.remove('hovering');
+          }
+        });
+        document.addEventListener('mousedown', () => cursor.classList.add('clicking'));
+        document.addEventListener('mouseup',   () => cursor.classList.remove('clicking'));
+      }
+
+      // ── SCROLL PROGRESS LINE ─────────────────────────────────────────
+      const progressLine = document.getElementById('scroll-progress-line');
+      if (progressLine) {
+        window.addEventListener('scroll', () => {
+          const s = document.documentElement.scrollTop;
+          const h = document.documentElement.scrollHeight - window.innerHeight;
+          progressLine.style.width = (h > 0 ? (s / h) * 100 : 0) + '%';
+        });
+      }
+
+      // ── CHARACTER-LEVEL TEXT REVEAL ───────────────────────────────────
+      function splitAndAnimate(selector, staggerDelay) {
+        document.querySelectorAll(selector).forEach(el => {
+          const text = el.textContent;
+          el.innerHTML = text.split('').map(ch =>
+            ch === ' '
+              ? '<span style="display:inline-block;width:0.3em;"> </span>'
+              : `<span class="char">${ch}</span>`
+          ).join('');
+          gsap.to(el.querySelectorAll('.char'), {
+            opacity: 1,
+            y: 0,
+            rotateX: 0,
+            duration: 0.6,
+            stagger: staggerDelay || 0.03,
+            ease: 'back.out(1.7)',
+            delay: 0.2,
+          });
+        });
+      }
+
+      // Animate welcome screen text
+      const welcomeTitle = document.querySelector('.welcome-title, .welcome-screen h1, h1');
+      if (welcomeTitle) {
+        welcomeTitle.classList.add('glitch-text');
+        splitAndAnimate('.welcome-title, .welcome-screen h1, h1', 0.04);
+      }
+
+      // ── MAGNETIC BUTTONS ──────────────────────────────────────────────
+      document.querySelectorAll('#btn-send, button[onclick="newChat()"], .workflow-mode-btn').forEach(btn => {
+        btn.classList.add('magnetic');
+        btn.addEventListener('mousemove', (e) => {
+          const r = btn.getBoundingClientRect();
+          const dx = e.clientX - (r.left + r.width  / 2);
+          const dy = e.clientY - (r.top  + r.height / 2);
+          gsap.to(btn, { x: dx * 0.25, y: dy * 0.25, duration: 0.3, ease: 'power2.out' });
+        });
+        btn.addEventListener('mouseleave', () => {
+          gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: 'elastic.out(1, 0.4)' });
+        });
+      });
+
+      // ── 3D CARD TILT ON HOVER ────────────────────────────────────────
+      document.addEventListener('mouseover', (e) => {
+        const card = e.target.closest('.example-card, .quick-prompt, .agent-message-card');
+        if (!card || card._tiltBound) return;
+        card._tiltBound = true;
+        card.style.transformStyle = 'preserve-3d';
+        card.style.transition = 'transform 0.1s ease';
+        card.addEventListener('mousemove', (ev) => {
+          const r = card.getBoundingClientRect();
+          const x = (ev.clientX - r.left) / r.width  - 0.5;
+          const y = (ev.clientY - r.top)  / r.height - 0.5;
+          gsap.to(card, {
+            rotateY: x * 10,
+            rotateX: -y * 10,
+            scale: 1.02,
+            duration: 0.2,
+            ease: 'power2.out',
+            transformPerspective: 800,
+          });
+        });
+        card.addEventListener('mouseleave', () => {
+          gsap.to(card, { rotateY: 0, rotateX: 0, scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.4)' });
+        });
+      });
+
+      // ── SEND BUTTON RIPPLE ON CLICK ───────────────────────────────────
+      const sendBtn = document.getElementById('btn-send');
+      if (sendBtn) {
+        sendBtn.addEventListener('click', () => {
+          gsap.timeline()
+            .to(sendBtn, { scale: 0.85, duration: 0.1, ease: 'power2.in' })
+            .to(sendBtn, { scale: 1,    duration: 0.5, ease: 'elastic.out(1.5, 0.4)' });
+        });
+      }
+
+      // ── STAGGERED SIDEBAR ITEM REVEALS ────────────────────────────────
+      gsap.from('.chat-item', {
+        opacity: 0,
+        x: -20,
+        duration: 0.4,
+        stagger: 0.04,
+        ease: 'power2.out',
+        delay: 0.5,
+      });
+
+      // ── WELCOME CARD HOVER GLOW ───────────────────────────────────────
+      document.addEventListener('mousemove', (e) => {
+        document.querySelectorAll('.example-card, .quick-prompt').forEach(card => {
+          const r = card.getBoundingClientRect();
+          const x = e.clientX - r.left;
+          const y = e.clientY - r.top;
+          card.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(124,58,237,0.12), rgba(255,255,255,0.02) 60%)`;
+        });
+      });
+
+      // ── INPUT FOCUS GLOW ──────────────────────────────────────────────
+      const chatInput = document.getElementById('chat-input');
+      if (chatInput) {
+        chatInput.addEventListener('focus', () => {
+          gsap.to('.input-wrapper', {
+            boxShadow: '0 0 0 3px rgba(124,58,237,0.2), 0 0 40px rgba(124,58,237,0.15)',
+            duration: 0.3,
+          });
+        });
+        chatInput.addEventListener('blur', () => {
+          gsap.to('.input-wrapper', {
+            boxShadow: '0 0 0 1px rgba(124,58,237,0.15)',
+            duration: 0.3,
+          });
+        });
+      }
+
+      console.log('✨ KodeImmersive-style animations loaded');
+    } // end initAnimations
+  }); // end window.load
+})();
 </script>
 </body>
 </html>
