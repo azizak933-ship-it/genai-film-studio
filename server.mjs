@@ -69,6 +69,28 @@ const ARTIFACTS_DIR       = join(DATA_DIR, 'artifacts');
 
 // ── Cloud Provider Definitions ───────────────────────────────────────────────
 const CLOUD_PROVIDERS = {
+  anthropic: {
+    name: 'Claude (Anthropic)',
+    // Uses Anthropic's native API — handled separately (not OpenAI-compat)
+    url: 'https://api.anthropic.com/v1/messages',
+    modelsUrl: null,
+    modelPriority: {
+      quality: [
+        'claude-opus-4-5',
+        'claude-sonnet-4-5',
+        'claude-haiku-4-5',
+        'claude-3-5-sonnet-20241022',
+        'claude-3-5-haiku-20241022',
+        'claude-3-opus-20240229',
+      ],
+      fast: [
+        'claude-haiku-4-5',
+        'claude-3-5-haiku-20241022',
+        'claude-sonnet-4-5',
+        'claude-3-5-sonnet-20241022',
+      ],
+    },
+  },
   groq: {
     name: 'Groq',
     url: 'https://api.groq.com/openai/v1/chat/completions',
@@ -290,6 +312,7 @@ function loadConfig() {
   if (process.env.OPENAI_TTS_KEY)     cfg.openaiTtsKey  = process.env.OPENAI_TTS_KEY;
   if (process.env.ELEVENLABS_API_KEY) cfg.elevenLabsKey = process.env.ELEVENLABS_API_KEY;
   if (process.env.HF_TOKEN)           cfg.hfToken       = process.env.HF_TOKEN;
+  if (process.env.ANTHROPIC_API_KEY)  cfg.claudeKey     = process.env.ANTHROPIC_API_KEY;
   return cfg;
 }
 function saveConfig(cfg) { writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf8'); }
@@ -301,6 +324,65 @@ async function streamCloudAgent(agent, messages, send) {
   const cfg = loadConfig();
   const assignment = AGENT_CLOUD[agent.id];
   if (!assignment) return null;
+
+  // ── Claude (Anthropic) — native API, tried first if claudeKey is set ──────────
+  if (cfg.claudeKey && cfg.claudeKey.trim()) {
+    const claudeProvider = CLOUD_PROVIDERS.anthropic;
+    const tier = assignment.tier || 'quality';
+    const modelList = claudeProvider.modelPriority[tier];
+    for (const model of modelList.slice(0, 2)) {
+      try {
+        const systemMsg = messages.find(m => m.role === 'system');
+        const userMessages = messages.filter(m => m.role !== 'system');
+        const fetchRes = await fetch(claudeProvider.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': cfg.claudeKey.trim(),
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model,
+            max_tokens: tier === 'quality' ? 2048 : 1500,
+            system: systemMsg?.content || '',
+            messages: userMessages,
+            stream: true,
+          }),
+        });
+        if (!fetchRes.ok) {
+          const status = fetchRes.status;
+          if (status === 401 || status === 403) break; // Bad key — stop trying Claude
+          const errText = await fetchRes.text().catch(() => '');
+          if (status === 529 || status === 529 || errText.includes('overloaded')) continue; // Try next model
+          break;
+        }
+        send({ event: 'agent-model-update', agentId: agent.id, model: `Claude: ${model}` });
+        const reader = fetchRes.body.getReader();
+        const dec = new TextDecoder();
+        let buf = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          const lines = buf.split('\n');
+          buf = lines.pop();
+          for (const line of lines) {
+            if (!line.startsWith('data:')) continue;
+            const data = line.slice(5).trim();
+            if (data === '[DONE]') continue;
+            try {
+              const parsed = JSON.parse(data);
+              const text = parsed.delta?.text || '';
+              if (text) send({ event: 'agent-token', agentId: agent.id, token: text });
+            } catch (_) {}
+          }
+        }
+        return true;
+      } catch (err) {
+        break; // Network error — stop trying Claude
+      }
+    }
+  }
 
   // Build fallback chain: preferred provider first, then the rest
   const ALL_PROVIDERS = ['google', 'groq', 'openrouter'];
@@ -3208,6 +3290,7 @@ ${new URL(req.url, 'http://localhost').searchParams.get('error') ? '<script>docu
       hfToken:        cfg.hfToken        ? '***' + cfg.hfToken.slice(-4)        : '',
       elevenLabsKey:  cfg.elevenLabsKey  ? '***' + cfg.elevenLabsKey.slice(-4)  : '',
       openaiTtsKey:   cfg.openaiTtsKey   ? '***' + cfg.openaiTtsKey.slice(-4)   : '',
+      claudeKey:      cfg.claudeKey      ? '***' + cfg.claudeKey.slice(-4)      : '',
     }));
     return;
   }
@@ -3226,6 +3309,7 @@ ${new URL(req.url, 'http://localhost').searchParams.get('error') ? '<script>docu
     if (body.hfToken       !== undefined) cfg.hfToken       = body.hfToken.trim();
     if (body.elevenLabsKey !== undefined) cfg.elevenLabsKey = body.elevenLabsKey.trim();
     if (body.openaiTtsKey  !== undefined) cfg.openaiTtsKey  = body.openaiTtsKey.trim();
+    if (body.claudeKey     !== undefined) cfg.claudeKey     = body.claudeKey.trim();
     saveConfig(cfg);
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true }));

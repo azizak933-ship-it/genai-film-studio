@@ -2994,6 +2994,22 @@ button[onclick="newChat()"]:hover {
       <h2><i data-lucide="settings" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:6px;"></i>API Keys &amp; Models</h2>
       <div class="settings-sub">Add free API keys to use cloud models. Agents fall back to local Ollama if no key is set.</div>
 
+      <!-- Claude (Anthropic) — priority provider -->
+      <div class="settings-provider" style="border:1px solid rgba(168,85,247,0.35);background:rgba(168,85,247,0.05);">
+        <div class="settings-provider-header">
+          <span style="font-size:16px;">🧠</span>
+          <span class="settings-provider-name">Claude (Anthropic)</span>
+          <span class="settings-provider-badge" style="background:rgba(168,85,247,0.15);color:#c084fc;border-color:rgba(168,85,247,0.3);">Priority · claude-opus &amp; sonnet</span>
+          <a href="https://console.anthropic.com/settings/keys" target="_blank" style="font-size:11px;color:var(--accent);margin-left:auto;">Get API key →</a>
+        </div>
+        <div class="settings-provider-models">Quality: <b>claude-opus-4-5</b> &nbsp;|&nbsp; Fast: <b>claude-haiku-4-5</b> — used for ALL 42 agents when key is set</div>
+        <div class="settings-input-row">
+          <input class="settings-input" id="input-claude" type="password" placeholder="sk-ant-..." autocomplete="off">
+          <button class="settings-save-btn" onclick="saveProviderKey('claude')">Save</button>
+        </div>
+        <div class="settings-status" id="status-claude"></div>
+      </div>
+
       <div class="settings-provider">
         <div class="settings-provider-header">
           <span style="color:#f97316;font-size:16px;">⚡</span>
@@ -6332,6 +6348,10 @@ async function openSettings() {
   document.getElementById('input-groq').value        = '';
   document.getElementById('input-google').value      = '';
   document.getElementById('input-openrouter').value  = '';
+  if (document.getElementById('input-claude')) {
+    document.getElementById('input-claude').placeholder = providerConfig.claudeKey || 'sk-ant-...';
+    document.getElementById('input-claude').value = '';
+  }
   document.getElementById('settings-modal').classList.add('open');
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
@@ -6341,9 +6361,9 @@ function closeSettings() {
 }
 
 async function saveProviderKey(provider) {
-  const inputId  = { groq: 'input-groq', google: 'input-google', openrouter: 'input-openrouter', tavily: 'input-tavily', jina: 'input-jina', searxng: 'input-searxng', stability: 'input-stability', replicate: 'input-replicate', openaiTts: 'input-openai-tts', elevenLabs: 'input-elevenlabs', hf: 'input-hf' }[provider];
-  const statusId = { groq: 'status-groq', google: 'status-google', openrouter: 'status-openrouter', tavily: 'status-tavily' }[provider];
-  const keyField = { groq: 'groqKey', google: 'googleKey', openrouter: 'openrouterKey', tavily: 'tavilyKey', jina: 'jinaKey', searxng: 'searxngUrl', stability: 'stabilityKey', replicate: 'replicateKey', openaiTts: 'openaiTtsKey', elevenLabs: 'elevenLabsKey', hf: 'hfToken' }[provider];
+  const inputId  = { groq: 'input-groq', google: 'input-google', openrouter: 'input-openrouter', tavily: 'input-tavily', jina: 'input-jina', searxng: 'input-searxng', stability: 'input-stability', replicate: 'input-replicate', openaiTts: 'input-openai-tts', elevenLabs: 'input-elevenlabs', hf: 'input-hf', claude: 'input-claude' }[provider];
+  const statusId = { groq: 'status-groq', google: 'status-google', openrouter: 'status-openrouter', tavily: 'status-tavily', claude: 'status-claude' }[provider];
+  const keyField = { groq: 'groqKey', google: 'googleKey', openrouter: 'openrouterKey', tavily: 'tavilyKey', jina: 'jinaKey', searxng: 'searxngUrl', stability: 'stabilityKey', replicate: 'replicateKey', openaiTts: 'openaiTtsKey', elevenLabs: 'elevenLabsKey', hf: 'hfToken', claude: 'claudeKey' }[provider];
   const val = document.getElementById(inputId)?.value.trim();
   const statusEl = statusId ? document.getElementById(statusId) : null;
 
