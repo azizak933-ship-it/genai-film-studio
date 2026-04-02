@@ -13,7 +13,24 @@
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <!-- XLSX loaded on demand, not at startup -->
+  <script>
+    // Lazy-load SheetJS only when needed
+    window._xlsxLoading = null;
+    function ensureXLSX() {
+      if (typeof XLSX !== 'undefined') return Promise.resolve();
+      if (!window._xlsxLoading) {
+        window._xlsxLoading = new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+      return window._xlsxLoading;
+    }
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -836,6 +853,8 @@
       color: var(--accent); border-color: var(--accent-border);
       pointer-events: none;
     }
+    .msg-action-btn.rated-up { color: #22c55e; border-color: #22c55e44; background: #22c55e11; }
+    .msg-action-btn.rated-down { color: #ef4444; border-color: #ef444444; background: #ef444411; }
 
     .thread-container {
       margin-left: 38px;
@@ -3149,7 +3168,7 @@ function renderMessages(messages, pinnedIds) {
       const color = m.color || getAgentColor(m.agentId) || '#888';
       const isCortex = m.agentId === 'ops-manager';
       const badge = isCortex ? `<span class="deepseek-badge">Cortex</span>` : '';
-      const modelLabel = isCortex ? `<div class="agent-model-label">Operations Manager</div>` : '';
+      const modelLabel = `<div class="agent-model-label">${escHtml(m.modelUsed || m.agentRole || (isCortex ? 'Operations Manager' : 'Local'))}</div>`;
       const pinClass = isPinned ? 'pin-btn pinned' : 'pin-btn';
       html += `<div class="message agent-card" style="border-left-color:${color}" data-msg-id="${msgId}" data-agent-id="${m.agentId}" data-agent-name="${escHtml(m.agentName||'Agent')}" data-lucide-icon="${m.lucideIcon || getAgentIcon(m.agentId)}">
         <div class="message-header">
@@ -3168,6 +3187,8 @@ function renderMessages(messages, pinnedIds) {
           <button class="msg-action-btn retry-btn" onclick="retryResponse(this.closest('.message'))"><i data-lucide="rotate-ccw"></i> Retry</button>
           <button class="msg-action-btn continue-btn" onclick="continueResponse(this.closest('.message'))"><i data-lucide="play"></i> Continue</button>
           <button class="msg-action-btn ${pinClass}" onclick="pinMessage(this.closest('.message'))">${isPinned ? '<i data-lucide="star"></i>' : '<i data-lucide="pin"></i>'} Pin</button>
+          <button class="msg-action-btn rate-btn" onclick="rateMessage(this.closest('.message'), 1)" title="Thumbs up"><i data-lucide="thumbs-up"></i></button>
+          <button class="msg-action-btn rate-btn" onclick="rateMessage(this.closest('.message'), -1)" title="Thumbs down"><i data-lucide="thumbs-down"></i></button>
         </div>
       </div>`;
     }
@@ -3394,6 +3415,8 @@ function handleSSE(data) {
         <button class="msg-action-btn retry-btn" onclick="retryResponse(this.closest('.message'))"><i data-lucide="rotate-ccw"></i> Retry</button>
         <button class="msg-action-btn continue-btn" onclick="continueResponse(this.closest('.message'))"><i data-lucide="play"></i> Continue</button>
         <button class="msg-action-btn pin-btn" onclick="pinMessage(this.closest('.message'))"><i data-lucide="pin"></i> Pin</button>
+        <button class="msg-action-btn rate-btn" onclick="rateMessage(this.closest('.message'), 1)" title="Thumbs up"><i data-lucide="thumbs-up"></i></button>
+        <button class="msg-action-btn rate-btn" onclick="rateMessage(this.closest('.message'), -1)" title="Thumbs down"><i data-lucide="thumbs-down"></i></button>
       </div>
     `;
     inner.appendChild(div);
@@ -4077,6 +4100,44 @@ function copyResponse(btn) {
   }).catch(err => {
     console.error('Copy failed:', err);
   });
+}
+
+function rateMessage(msgEl, rating) {
+  if (!msgEl || !currentProjectId) return;
+  const msgId = msgEl.dataset.msgId || '';
+  const agentId = msgEl.dataset.agentId || '';
+  if (!msgId || !agentId) return;
+
+  // Check localStorage for existing rating
+  const storageKey = `ratings-${currentProjectId}-${msgId}`;
+  const existing = localStorage.getItem(storageKey);
+  if (existing) {
+    // Already rated — allow toggling off or changing
+    if (parseInt(existing) === rating) {
+      localStorage.removeItem(storageKey);
+      msgEl.querySelectorAll('.rate-btn').forEach(b => b.classList.remove('rated-up', 'rated-down'));
+      return;
+    }
+  }
+
+  localStorage.setItem(storageKey, rating);
+
+  // Visual feedback
+  const btns = msgEl.querySelectorAll('.rate-btn');
+  btns.forEach(b => b.classList.remove('rated-up', 'rated-down'));
+  if (rating === 1 && btns[0]) btns[0].classList.add('rated-up');
+  if (rating === -1 && btns[1]) btns[1].classList.add('rated-down');
+
+  // Get model from the label if available
+  const labelEl = msgEl.querySelector('.agent-model-label');
+  const model = labelEl ? labelEl.textContent : '';
+
+  // Send to server (fire and forget)
+  fetch(`/api/projects/${currentProjectId}/rate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messageId: msgId, agentId, rating, model })
+  }).catch(() => {});
 }
 
 async function retryResponse(msgEl) {

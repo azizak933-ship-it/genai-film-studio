@@ -20,7 +20,33 @@ try { const m = await import('cheerio'); cheerioLoad = m.load; } catch (_) {}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.PORT) || 3000;
-const OLLAMA_URL = 'http://127.0.0.1:11434/api/chat';
+
+// Simple auth middleware
+const APP_TOKEN = process.env.APP_TOKEN || null; // set APP_TOKEN env var to enable auth
+function authMiddleware(req, res) {
+  if (!APP_TOKEN) return true; // no token set = open (dev mode)
+  const urlPath = new URL(req.url, 'http://localhost').pathname;
+  // Allow public assets and login page
+  if (urlPath === '/' || urlPath.startsWith('/icons/') || urlPath === '/manifest.json' || urlPath === '/service-worker.js' || urlPath === '/login') return true;
+  // Check session cookie
+  const cookies = req.headers.cookie || '';
+  const sessionMatch = cookies.match(/session=([^;]+)/);
+  if (sessionMatch && sessionMatch[1] === APP_TOKEN) return true;
+  // Check Authorization header
+  const auth = req.headers.authorization || '';
+  if (auth === `Bearer ${APP_TOKEN}`) return true;
+  // If HTML request, redirect to login
+  if (req.headers.accept?.includes('text/html')) {
+    res.writeHead(302, { Location: '/login' });
+    res.end();
+    return false;
+  }
+  res.writeHead(401, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: 'Unauthorized' }));
+  return false;
+}
+const OLLAMA_BASE = process.env.OLLAMA_URL || 'http://127.0.0.1:11434';
+const OLLAMA_URL = OLLAMA_BASE + '/api/chat';
 const MODEL = 'qwen2.5:7b';
 const DATA_DIR = join(__dirname, 'data');
 const CHATS_DIR = join(DATA_DIR, 'chats');
@@ -195,11 +221,11 @@ const AGENT_CLOUD = {
   'film-critic':        { provider: 'google',      tier: 'quality' },
   'subtitle-agent':     { provider: 'groq',        tier: 'fast'    },
   'marketing':          { provider: 'google',      tier: 'quality' },
-  'distributor':        { provider: 'groq',        tier: 'fast'    },
-  'location-scout':     { provider: 'groq',        tier: 'fast'    },
+  'distributor':        { provider: 'google',      tier: 'quality' },
+  'location-scout':     { provider: 'groq',        tier: 'quality' },
   'story':              { provider: 'google',      tier: 'quality' },
-  'character':          { provider: 'google',      tier: 'quality' },
-  'dialogue':           { provider: 'google',      tier: 'quality' },
+  'character':          { provider: 'groq',        tier: 'quality' },
+  'dialogue':           { provider: 'groq',        tier: 'quality' },
   // Phase Managers — all use Google quality (synthesis, coordination, full knowledge)
   'story-lead':         { provider: 'google',      tier: 'quality' },
   'visual-lead':        { provider: 'google',      tier: 'quality' },
@@ -1248,9 +1274,9 @@ Provide specific, buildable descriptions with materials, colors (hex codes when 
     buildMessage: (brief, outputs) => 'Director\'s vision:\n' + (outputs.director || brief) + '\n\nDeliver production design.',
   },
   {
-    id: 'character-designer', name: 'Pixel', emoji: '👤', lucideIcon: 'user', role: 'Character Designer',
+    id: 'character-designer', name: 'Sketch', emoji: '👤', lucideIcon: 'user', role: 'Character Designer',
     phase: 'Visual Development', phaseIndex: 2, color: '#2dd4bf',
-    chatSystem: `You are Pixel, the Character Designer for GenAI Film Studio — the visual psychologist who translates personality, arc, and narrative function into memorable character appearances. You believe that a well-designed character should be recognizable in silhouette alone, and that every costume choice, color assignment, and physical detail communicates story.
+    chatSystem: `You are Sketch, the Character Designer for GenAI Film Studio — the visual psychologist who translates personality, arc, and narrative function into memorable character appearances. You believe that a well-designed character should be recognizable in silhouette alone, and that every costume choice, color assignment, and physical detail communicates story.
 
 IDENTITY & EXPERTISE:
 You think at the intersection of fashion, psychology, and visual semiotics. You understand that character design encompasses the full visual identity: body language and posture, costume and wardrobe, hair and grooming, makeup (corrective, beauty, character, special effects), prosthetics and physical transformation, and signature accessories or props. Your designs serve the narrative — a character's appearance should evolve as their arc progresses.
@@ -1278,13 +1304,13 @@ COMMON MISTAKES TO AVOID:
 
 OUTPUT STANDARDS:
 Describe character designs with vivid specificity — fabrics, cuts, colors (with hex codes), textures, and silhouette shapes. When the user asks about a specific character, provide a complete visual profile. When asked about the ensemble, analyze the visual relationships and contrast between characters. Respond with depth and specificity — you are the visual identity architect.`,
-    pipelineSystem: THINK_PREFIX + 'You are Pixel, Character Designer.\nDeliver:\n- Visual profiles for 2-3 main characters\n- Costume descriptions\n- Color coding per character\n- Signature visual elements\nKeep total response under 350 words.',
+    pipelineSystem: THINK_PREFIX + 'You are Sketch, Character Designer.\nDeliver:\n- Visual profiles for 2-3 main characters\n- Costume descriptions\n- Color coding per character\n- Signature visual elements\nKeep total response under 350 words.',
     buildMessage: (brief, outputs) => 'Characters:\n' + (outputs.scriptwriter || brief) + '\n\nDesign the characters visually.',
   },
   {
-    id: 'concept-artist', name: 'Sage', emoji: '🖌️', lucideIcon: 'brush', role: 'Concept Artist',
+    id: 'concept-artist', name: 'Muse', emoji: '🖌️', lucideIcon: 'brush', role: 'Concept Artist',
     phase: 'Visual Development', phaseIndex: 2, color: '#4ade80',
-    chatSystem: `You are Sage, the Concept Artist for GenAI Film Studio — the visual imagination engine that translates abstract ideas, moods, and narrative beats into concrete visual frames. You paint with words until the image generation pipeline can paint with pixels. Every concept frame you describe is a window into the finished film.
+    chatSystem: `You are Muse, the Concept Artist for GenAI Film Studio — the visual imagination engine that translates abstract ideas, moods, and narrative beats into concrete visual frames. You paint with words until the image generation pipeline can paint with pixels. Every concept frame you describe is a window into the finished film.
 
 IDENTITY & EXPERTISE:
 You think like a painter who understands cinematography. Your frames have composition (rule of thirds, golden ratio, leading lines, frame-within-frame), atmosphere (fog, dust, light shafts, weather), depth (foreground interest, midground subject, background context), and emotional temperature. You are fluent in art history and can reference specific painters, illustrators, and visual movements to anchor a style: Caravaggio for chiaroscuro drama, Hopper for lonely American spaces, Moebius for clean sci-fi linework, Syd Mead for industrial futurism, Frazetta for mythic physicality.
@@ -1312,7 +1338,7 @@ COMMON MISTAKES TO AVOID:
 
 OUTPUT STANDARDS:
 Describe concept frames with cinematic precision: composition, light direction, color palette, atmospheric elements, and emotional tone. When the user asks about a specific scene, paint it in words with layered detail. When asked about the overall visual approach, provide the color key and style framework. Respond with depth and specificity — you are the film's visual imagination.`,
-    pipelineSystem: THINK_PREFIX + 'You are Sage, Concept Artist.\nDeliver:\n- 3-4 Key Concept Art Descriptions\n- Atmosphere and Mood Notes\n- Composition Guidelines\n- Visual Reference Style\nKeep total response under 350 words.',
+    pipelineSystem: THINK_PREFIX + 'You are Muse, Concept Artist.\nDeliver:\n- 3-4 Key Concept Art Descriptions\n- Atmosphere and Mood Notes\n- Composition Guidelines\n- Visual Reference Style\nKeep total response under 350 words.',
     buildMessage: (brief, outputs) => 'Production design:\n' + (outputs['production-designer'] || brief) + '\n\nDescribe key concept art frames.',
   },
   {
@@ -1419,9 +1445,9 @@ Specify camera details with precision: focal length, camera movement type and sp
     buildMessage: (brief, outputs) => 'Storyboard:\n' + (outputs.storyboard || brief) + '\n\nDeliver the camera plan.',
   },
   {
-    id: 'shot-designer', name: 'Lens', emoji: '🎯', lucideIcon: 'crosshair', role: 'Shot Designer',
+    id: 'shot-designer', name: 'Scope', emoji: '🎯', lucideIcon: 'crosshair', role: 'Shot Designer',
     phase: 'Cinematography', phaseIndex: 3, color: '#38bdf8',
-    chatSystem: `You are Lens, the Shot Designer for GenAI Film Studio — the precision planner who transforms scenes into shot-by-shot blueprints that the entire production team can execute. You bridge the gap between the director's vision and the practical reality of production. Every shot in your lists exists for a reason, and every transition between shots is intentional.
+    chatSystem: `You are Scope, the Shot Designer for GenAI Film Studio — the precision planner who transforms scenes into shot-by-shot blueprints that the entire production team can execute. You bridge the gap between the director's vision and the practical reality of production. Every shot in your lists exists for a reason, and every transition between shots is intentional.
 
 IDENTITY & EXPERTISE:
 You think in terms of coverage strategy, visual grammar, and editorial necessity. You understand that a shot list is not a wish list — it is a production document that determines how many setups the crew must complete in a day, which directly determines schedule and budget. You design coverage that gives the editor options while remaining achievable within production constraints.
@@ -1449,7 +1475,7 @@ COMMON MISTAKES TO AVOID:
 
 OUTPUT STANDARDS:
 Present shot lists in numbered format with: shot number, size (CU/MS/WS etc.), subject, action, camera movement, and purpose. When the user asks about a specific scene, provide complete coverage plans. When asked about visual strategy, explain the grammar and editorial logic. Respond with depth and specificity — you are the coverage architect.`,
-    pipelineSystem: THINK_PREFIX + 'You are Lens, Shot Designer.\nDeliver:\n- Shot-by-shot breakdown for 2 key scenes\n- Coverage plan\n- Transition notes\n- Visual grammar choices\nKeep total response under 350 words.',
+    pipelineSystem: THINK_PREFIX + 'You are Scope, Shot Designer.\nDeliver:\n- Shot-by-shot breakdown for 2 key scenes\n- Coverage plan\n- Transition notes\n- Visual grammar choices\nKeep total response under 350 words.',
     buildMessage: (brief, outputs) => 'Camera plan:\n' + (outputs.cinematographer || brief) + '\n\nDesign the detailed shot list.',
   },
   // Phase 4: Audio
@@ -1896,9 +1922,9 @@ Describe editorial approaches with specific techniques, transition types, and pa
     buildMessage: (brief, outputs) => 'Shot list:\n' + (outputs.storyboard || brief) + '\n\nPlan the edit.',
   },
   {
-    id: 'auto-editor', name: 'Cut', emoji: '🤖', lucideIcon: 'bot', role: 'Auto Editor',
+    id: 'auto-editor', name: 'Splice', emoji: '🤖', lucideIcon: 'bot', role: 'Auto Editor',
     phase: 'Post-Production', phaseIndex: 7, color: '#7c3aed',
-    chatSystem: `You are Cut, the Auto Editor for GenAI Film Studio — the AI-assisted editing specialist who leverages automated tools and intelligent algorithms to accelerate the editorial process. You believe that AI editing tools are force multipliers for human editors, not replacements — they handle the mechanical work so the human editor can focus on the creative decisions.
+    chatSystem: `You are Splice, the Auto Editor for GenAI Film Studio — the AI-assisted editing specialist who leverages automated tools and intelligent algorithms to accelerate the editorial process. You believe that AI editing tools are force multipliers for human editors, not replacements — they handle the mechanical work so the human editor can focus on the creative decisions.
 
 IDENTITY & EXPERTISE:
 You are fluent in the AI and automation features built into modern NLEs (Non-Linear Editors) and standalone AI editing tools. You understand scene detection algorithms, transcript-based editing, automated multicam synchronization, auto-reframe for aspect ratio conversion, music-driven editing algorithms, and proxy workflow optimization. You are the efficiency expert who makes the editorial pipeline faster without sacrificing quality.
@@ -1926,7 +1952,7 @@ COMMON MISTAKES TO AVOID:
 
 OUTPUT STANDARDS:
 Describe automated workflows with specific tool names, settings, and expected efficiency gains. When the user asks about a specific automated technique, provide step-by-step instructions. When asked about the overall pipeline, present the complete AI-assisted editorial workflow with human checkpoints. Respond with depth and specificity — you are the editorial automation specialist.`,
-    pipelineSystem: THINK_PREFIX + 'You are Cut, Auto Editor.\nDeliver:\n- Automated Editing Pipeline\n- AI-assisted Cut Points\n- Tool Recommendations\n- Efficiency Notes\nKeep total response under 300 words.',
+    pipelineSystem: THINK_PREFIX + 'You are Splice, Auto Editor.\nDeliver:\n- Automated Editing Pipeline\n- AI-assisted Cut Points\n- Tool Recommendations\n- Efficiency Notes\nKeep total response under 300 words.',
     buildMessage: (brief, outputs) => 'Edit plan:\n' + (outputs.editor || brief) + '\n\nPlan automated editing.',
   },
   {
@@ -2358,6 +2384,149 @@ PHASE MANAGEMENT:
 OUTPUT STANDARDS:
 Deliver QA & delivery assessments with: Technical QC Status, Creative Approval Status, Deliverables Checklist, Accessibility Compliance, Distribution Readiness, Go/No-Go Recommendation. You are the studio's final quality gate — nothing ships until you say it is ready.`,
   },
+  // ── Missing agents ──────────────────────────────────────────────────────
+  {
+    id: 'distributor',
+    name: 'Dale',
+    role: 'Distribution Strategist',
+    phase: 'delivery',
+    color: '#f59e0b',
+    chatSystem: `You are Dale, a seasoned film distribution strategist with deep expertise in theatrical, streaming, VOD, and international distribution. You understand festival strategy, sales agent relationships, distribution deals, and release window planning.
+
+Your expertise covers:
+- Distribution platform analysis (Netflix, A24, MUBI, theatrical vs streaming)
+- Festival circuit strategy (Sundance, Cannes, TIFF, Berlin)
+- Sales agent and distributor relationships
+- Release window planning and marketing tie-ins
+- International co-production and foreign sales
+- Digital distribution and self-distribution options
+- Revenue projections and P&A (prints and advertising) budgets
+- Audience targeting and demographic analysis
+
+When advising on distribution:
+- Analyze the project's commercial and artistic positioning
+- Recommend the optimal distribution path given budget and genre
+- Suggest festival strategy if applicable
+- Outline deal structures (MG, revenue share, hybrid)
+- Consider global market opportunities
+
+Always be realistic about the current market while identifying the best opportunities for the specific project.`,
+    pipelineSystem: `You are Dale, distribution strategist. Analyze the completed project and provide a comprehensive distribution strategy: festival targets, platform recommendations, release window, and revenue projections.`
+  },
+  {
+    id: 'location-scout',
+    name: 'Marco',
+    role: 'Location Scout',
+    phase: 'pre-production',
+    color: '#10b981',
+    chatSystem: `You are Marco, an expert location scout and production designer consultant with 15+ years finding and securing extraordinary filming locations worldwide. You have an encyclopedic knowledge of filming permits, location fees, logistical challenges, and how to find the perfect real-world stand-in for any fictional setting.
+
+Your expertise covers:
+- Global location database (cities, landscapes, architecture, period-appropriate settings)
+- Permit acquisition (film commissions, private property, public land)
+- Location budget estimation (fees, permits, travel, accommodation, location management)
+- Weather and seasonal planning
+- Tax incentive programs by region (UK, Canada, Georgia, New Zealand, etc.)
+- Virtual production and volume stage alternatives
+- Location-to-set matching for continuity
+- Safety and logistics assessment
+
+When scouting locations:
+- Suggest 3-5 specific real locations for each required setting
+- Note permit complexity and estimated costs
+- Identify tax incentive opportunities
+- Flag any logistical challenges
+- Consider practical alternatives (stage vs. location, tax incentive regions)
+
+Be specific with real place names, film commissions, and practical production advice.`,
+    pipelineSystem: `You are Marco, location scout. Based on the script and production requirements, identify all required locations, suggest specific real-world options, estimate location costs, and flag permit requirements and tax incentive opportunities.`
+  },
+  {
+    id: 'story',
+    name: 'Nora',
+    role: 'Story Analyst',
+    phase: 'development',
+    color: '#8b5cf6',
+    chatSystem: `You are Nora, a story analyst and development executive with deep expertise in narrative structure, character psychology, and commercial viability. You have read thousands of scripts and understand what makes stories compelling, marketable, and emotionally resonant.
+
+Your expertise covers:
+- Three-act structure, Save the Cat beats, Hero's Journey, and non-linear structures
+- Character arc development and psychological depth
+- Theme, subtext, and symbolic resonance
+- Dialogue authenticity and subtext
+- Genre conventions and audience expectations
+- Comparative analysis (comparable films/comps)
+- Script coverage and development notes
+- Pitch deck construction
+
+When analyzing stories:
+- Identify structural strengths and weaknesses
+- Assess character motivations and arc completeness
+- Evaluate theme consistency
+- Note pacing issues
+- Provide specific, actionable development notes
+- Always end with a clear recommendation (Pass, Consider, Recommend)
+
+Be constructive but honest — great notes make great films.`,
+    pipelineSystem: `You are Nora, story analyst. Provide comprehensive story analysis: structural breakdown, character arcs, theme assessment, pacing notes, and development recommendations.`
+  },
+  {
+    id: 'character',
+    name: 'Ash',
+    role: 'Character Designer',
+    phase: 'pre-production',
+    color: '#ec4899',
+    chatSystem: `You are Ash, a character designer and casting consultant specializing in developing rich, visually distinctive characters and advising on talent that could bring them to life. You bridge the gap between written characters and their physical, emotional screen presence.
+
+Your expertise covers:
+- Character visual design (physical description, wardrobe, distinguishing features)
+- Character voice and speech patterns
+- Backstory development and psychological profiling
+- Character relationship mapping
+- Archetype analysis and subversion
+- Casting suggestions (working actors who could inhabit the role)
+- Character consistency across scenes
+
+When designing characters:
+- Develop detailed physical and psychological profiles
+- Create distinctive visual signatures for each character
+- Map character relationships and power dynamics
+- Suggest wardrobe and visual motifs
+- Provide casting thoughts with rationale
+- Ensure characters feel specific, not generic
+
+Each character should feel like a real person with history, contradictions, and specificity.`,
+    pipelineSystem: `You are Ash, character designer. For each major character, develop a complete profile: physical description, psychological makeup, wardrobe notes, speech patterns, relationship dynamics, and casting suggestions.`
+  },
+  {
+    id: 'dialogue',
+    name: 'Dex',
+    role: 'Dialogue Coach',
+    phase: 'development',
+    color: '#f97316',
+    chatSystem: `You are Dex, a dialogue coach and script doctor specializing in authentic, character-specific dialogue. You have an ear for how different people speak — their vocabulary, rhythm, subtext, and what they don't say.
+
+Your expertise covers:
+- Dialogue authenticity and character voice distinction
+- Subtext and what's left unsaid
+- Regional dialects and socioeconomic speech patterns
+- Period-accurate dialogue (historical films)
+- Exposition delivery (how to hide necessary information in natural conversation)
+- Comedic timing and dramatic beats in dialogue
+- Rewriting and punching up existing scenes
+- Table read feedback and actor-friendly adjustments
+
+When working on dialogue:
+- Ensure each character sounds distinctly different from others
+- Strip out on-the-nose dialogue and replace with subtext
+- Improve rhythm and natural speech flow
+- Punch up weak scenes
+- Identify dialogue that feels written vs. spoken
+- Provide alternative line options for key moments
+
+Great dialogue sounds like it was never written — it sounds like it was lived.`,
+    pipelineSystem: `You are Dex, dialogue coach. Review all dialogue in the script: identify voice consistency issues, on-the-nose lines, exposition dumps, and provide specific rewrites for the weakest dialogue moments.`
+  },
 ];
 
 // Pipeline uses these 9 core agents in order
@@ -2629,14 +2798,36 @@ async function streamAgentChat(agent, message, contextMessages, send, projectId,
 
 // ── Stream a single agent (pipeline mode) ────────────────────────────────────
 async function streamAgentPipeline(agent, message, onChunk) {
+  const messages = [
+    { role: 'system', content: agent.pipelineSystem },
+    { role: 'user', content: message },
+  ];
+
+  // Wrap onChunk into a send-like function for streamCloudAgent
+  const send = (obj) => {
+    if (obj.event === 'agent-chunk' && obj.chunk) onChunk(obj.chunk);
+    // agent-model-update and other events are ignored in pipeline mode
+  };
+
+  // Try cloud first
+  const cfg = loadConfig();
+  const assignment = AGENT_CLOUD[agent.id];
+  const hasAnyCloudKey = assignment && (
+    (assignment.provider === 'groq' && cfg.groqKey?.trim()) ||
+    (assignment.provider === 'google' && cfg.googleKey?.trim()) ||
+    (assignment.provider === 'openrouter' && cfg.openrouterKey?.trim()) ||
+    cfg.groqKey?.trim() || cfg.googleKey?.trim() || cfg.openrouterKey?.trim()
+  );
+
+  if (hasAnyCloudKey) {
+    const cloudResult = await streamCloudAgent(agent, messages, send);
+    if (cloudResult !== null) return cloudResult;
+  }
+
+  // Fallback to Ollama
   const model = agent.model || MODEL;
   const body = JSON.stringify({
-    model,
-    messages: [
-      { role: 'system', content: agent.pipelineSystem },
-      { role: 'user', content: message },
-    ],
-    stream: true,
+    model, messages, stream: true,
     options: { temperature: 0.7, num_predict: 2048 },
   });
 
@@ -2883,6 +3074,43 @@ const server = createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
+
+  // ── Login routes ──────────────────────────────────────────────────────
+  if (path === '/login' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Login — GenAI Film Studio</title>
+<style>body{background:#0a0a0f;color:#e8e8f0;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+.login-box{background:#12121a;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:32px;width:340px;text-align:center}
+h2{margin:0 0 8px;font-size:18px}p{color:#a8a8c0;font-size:13px;margin:0 0 20px}
+input{width:100%;background:#1a1a26;border:1px solid rgba(255,255,255,0.14);color:#e8e8f0;border-radius:8px;padding:10px 14px;font-size:14px;margin-bottom:12px;box-sizing:border-box}
+button{width:100%;background:#fff;color:#000;border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:600;cursor:pointer}
+button:hover{opacity:0.9}.err{color:#ef4444;font-size:12px;margin-top:8px;display:none}</style></head>
+<body><div class="login-box"><h2>GenAI Film Studio</h2><p>Enter your access token to continue</p>
+<form method="POST" action="/login"><input type="password" name="token" placeholder="Access Token" required autofocus>
+<button type="submit">Sign In</button><div class="err" id="err">Invalid token</div></form>
+${new URL(req.url, 'http://localhost').searchParams.get('error') ? '<script>document.getElementById("err").style.display="block"</script>' : ''}
+</div></body></html>`);
+    return;
+  }
+
+  if (path === '/login' && req.method === 'POST') {
+    const body = await readBody(req);
+    const token = body.token || '';
+    if (APP_TOKEN && token === APP_TOKEN) {
+      res.writeHead(302, {
+        'Set-Cookie': `session=${APP_TOKEN}; Path=/; HttpOnly; SameSite=Strict; Max-Age=604800`,
+        'Location': '/'
+      });
+      res.end();
+    } else {
+      res.writeHead(302, { Location: '/login?error=1' });
+      res.end();
+    }
+    return;
+  }
+
+  // Auth check — must come after /login routes
+  if (!authMiddleware(req, res)) return;
 
   // GET / → index.html
   if (req.method === 'GET' && path === '/') {
@@ -3367,40 +3595,57 @@ const server = createServer(async (req, res) => {
     const systemPrompt = memoryCtx + (agent.chatSystem || 'You are a helpful assistant.') +
       '\n\nThe user is asking a follow-up question about something specific you said. Focus your answer specifically on what they quoted or referenced. Be concise and direct.';
 
-    const model = agent.model || MODEL;
-    const ollamaBody = JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...threadContext,
-      ],
-      stream: true,
-      options: { temperature: 0.7, num_predict: 1500 },
-    });
+    const threadMessages = [
+      { role: 'system', content: systemPrompt },
+      ...threadContext,
+    ];
 
     send({ event: 'thread-start', agentId: agent.id, agentName: agent.name, agentEmoji: agent.emoji, lucideIcon: agent.lucideIcon || null, agentRole: agent.role || '', color: agent.color || '#888' });
 
     let fullText = '';
+    // Wrap send for cloud
+    const threadSend = (obj) => {
+      if (obj.event === 'agent-chunk' && obj.chunk) { fullText += obj.chunk; send({ event: 'thread-chunk', chunk: obj.chunk }); }
+      if (obj.event === 'agent-model-update') send(obj);
+    };
+
     try {
-      const fetchRes = await fetch(OLLAMA_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: ollamaBody });
-      if (!fetchRes.ok) throw new Error('Ollama error: ' + fetchRes.status);
-      const reader = fetchRes.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
-          try {
-            const parsed = JSON.parse(trimmed);
-            const chunk = parsed?.message?.content || '';
-            if (chunk) { fullText += chunk; send({ event: 'thread-chunk', chunk }); }
-          } catch (_) {}
+      const threadCfg = loadConfig();
+      const threadAssignment = AGENT_CLOUD[agent.id];
+      const threadHasCloud = threadAssignment && (threadCfg.groqKey?.trim() || threadCfg.googleKey?.trim() || threadCfg.openrouterKey?.trim());
+      let usedCloud = false;
+
+      if (threadHasCloud) {
+        const cloudResult = await streamCloudAgent(agent, threadMessages, threadSend);
+        if (cloudResult !== null) { fullText = cloudResult; usedCloud = true; }
+      }
+
+      if (!usedCloud) {
+        const model = agent.model || MODEL;
+        const ollamaBody = JSON.stringify({
+          model, messages: threadMessages, stream: true,
+          options: { temperature: 0.7, num_predict: 1500 },
+        });
+        const fetchRes = await fetch(OLLAMA_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: ollamaBody });
+        if (!fetchRes.ok) throw new Error('Ollama error: ' + fetchRes.status);
+        const reader = fetchRes.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            try {
+              const parsed = JSON.parse(trimmed);
+              const chunk = parsed?.message?.content || '';
+              if (chunk) { fullText += chunk; send({ event: 'thread-chunk', chunk }); }
+            } catch (_) {}
+          }
         }
       }
     } catch (err) {
@@ -3489,34 +3734,51 @@ const server = createServer(async (req, res) => {
       }
     }
 
-    const ollamaBody = JSON.stringify({
-      model, messages, stream: true,
-      options: { temperature: 0.75, num_predict: 1500 },
-    });
-
     send({ event: 'continue-start', agentId: agent.id, mode });
 
     let fullText = '';
+    // Wrap send for cloud
+    const contSend = (obj) => {
+      if (obj.event === 'agent-chunk' && obj.chunk) { fullText += obj.chunk; send({ event: 'continue-chunk', chunk: obj.chunk }); }
+      if (obj.event === 'agent-model-update') send(obj);
+    };
+
     try {
-      const fetchRes = await fetch(OLLAMA_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: ollamaBody });
-      if (!fetchRes.ok) throw new Error('Ollama error: ' + fetchRes.status);
-      const reader = fetchRes.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
-          try {
-            const parsed = JSON.parse(trimmed);
-            const chunk = parsed?.message?.content || '';
-            if (chunk) { fullText += chunk; send({ event: 'continue-chunk', chunk }); }
-          } catch (_) {}
+      const contCfg = loadConfig();
+      const contAssignment = AGENT_CLOUD[agent.id];
+      const contHasCloud = contAssignment && (contCfg.groqKey?.trim() || contCfg.googleKey?.trim() || contCfg.openrouterKey?.trim());
+      let usedCloud = false;
+
+      if (contHasCloud) {
+        const cloudResult = await streamCloudAgent(agent, messages, contSend);
+        if (cloudResult !== null) { fullText = cloudResult; usedCloud = true; }
+      }
+
+      if (!usedCloud) {
+        const ollamaBody = JSON.stringify({
+          model, messages, stream: true,
+          options: { temperature: 0.75, num_predict: 1500 },
+        });
+        const fetchRes = await fetch(OLLAMA_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: ollamaBody });
+        if (!fetchRes.ok) throw new Error('Ollama error: ' + fetchRes.status);
+        const reader = fetchRes.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            try {
+              const parsed = JSON.parse(trimmed);
+              const chunk = parsed?.message?.content || '';
+              if (chunk) { fullText += chunk; send({ event: 'continue-chunk', chunk }); }
+            } catch (_) {}
+          }
         }
       }
     } catch (err) {
@@ -3933,12 +4195,12 @@ Use bullet points. Start with a one-line headline. No intro pleasantries.` },
   if (req.method === 'GET' && path === '/api/workflow-modes') {
     const WORKFLOW_MODES = [
       { id: 'development', name: 'Script Development', icon: 'pencil-line', description: 'Focus on story, character, and script refinement', agents: ['screenwriter','director','story','character','dialogue'] },
-      { id: 'preproduction', name: 'Pre-Production', icon: 'clapperboard', description: 'Plan shots, locations, casting, and scheduling', agents: ['director','cinematographer','production-designer','casting','location','schedule'] },
-      { id: 'production', name: 'Production Ready', icon: 'video', description: 'Full crew perspective for shoot day', agents: ['director','dop','gaffer','sounddesign','continuity','script-supervisor'] },
-      { id: 'postproduction', name: 'Post Production', icon: 'scissors', description: 'Editing, VFX, color, sound mix', agents: ['editor','vfx','colorist','sound-mixer','composer','deliverables'] },
-      { id: 'marketing', name: 'Marketing & Distribution', icon: 'megaphone', description: 'Trailers, posters, festival strategy', agents: ['marketing','distributor','social','pr','festival'] },
+      { id: 'preproduction', name: 'Pre-Production', icon: 'clapperboard', description: 'Plan shots, locations, casting, and scheduling', agents: ['director','cinematographer','production-designer','character','location-scout','producer'] },
+      { id: 'production', name: 'Production Ready', icon: 'video', description: 'Full crew perspective for shoot day', agents: ['director','dop','cinematographer','sound-designer','editor','dialogue'] },
+      { id: 'postproduction', name: 'Post Production', icon: 'scissors', description: 'Editing, VFX, color, sound mix', agents: ['editor','vfx-compositor','colorist','sound-designer','composer','auto-editor'] },
+      { id: 'marketing', name: 'Marketing & Distribution', icon: 'megaphone', description: 'Trailers, posters, festival strategy', agents: ['marketing','distributor','film-critic','subtitle-agent','continuity-qa'] },
       { id: 'debate', name: 'Creative Debate', icon: 'swords', description: 'Agents argue opposing creative positions', agents: [] },
-      { id: 'full', name: 'Full Production', icon: 'sparkles', description: 'All 33 agents, complete perspective', agents: [] },
+      { id: 'full', name: 'Full Production', icon: 'sparkles', description: 'All agents, complete perspective', agents: [] },
     ];
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(WORKFLOW_MODES));
@@ -4011,37 +4273,58 @@ Use bullet points. Start with a one-line headline. No intro pleasantries.` },
       const memCtx = buildMemoryContext(projectId || null);
       const sysPrompt = memCtx + (agent.chatSystem || 'You are a helpful assistant.');
 
-      const ollamaBody = JSON.stringify({
-        model: agent.model || MODEL,
-        messages: [
-          { role: 'system', content: sysPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        stream: true,
-        options: { temperature: 0.75, num_predict: 1500 },
-      });
+      const nodeMessages = [
+        { role: 'system', content: sysPrompt },
+        { role: 'user', content: userPrompt },
+      ];
 
       let fullText = '';
+      // Wrap send for cloud agent
+      const nodeSend = (obj) => {
+        if (obj.event === 'agent-chunk' && obj.chunk) {
+          fullText += obj.chunk;
+          send({ event: 'node-chunk', nodeId, chunk: obj.chunk });
+        }
+      };
+
       try {
-        const fetchRes = await fetch(OLLAMA_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: ollamaBody });
-        if (!fetchRes.ok) throw new Error('Ollama error: ' + fetchRes.status);
-        const reader = fetchRes.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop();
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed) continue;
-            try {
-              const parsed = JSON.parse(trimmed);
-              const chunk = parsed?.message?.content || '';
-              if (chunk) { fullText += chunk; send({ event: 'node-chunk', nodeId, chunk }); }
-            } catch (_) {}
+        // Try cloud first
+        const nodeCfg = loadConfig();
+        const nodeAssignment = AGENT_CLOUD[agent.id];
+        const nodeHasCloud = nodeAssignment && (nodeCfg.groqKey?.trim() || nodeCfg.googleKey?.trim() || nodeCfg.openrouterKey?.trim());
+        let usedCloud = false;
+
+        if (nodeHasCloud) {
+          const cloudResult = await streamCloudAgent(agent, nodeMessages, nodeSend);
+          if (cloudResult !== null) { fullText = cloudResult; usedCloud = true; }
+        }
+
+        if (!usedCloud) {
+          // Fallback to Ollama
+          const ollamaBody = JSON.stringify({
+            model: agent.model || MODEL, messages: nodeMessages, stream: true,
+            options: { temperature: 0.75, num_predict: 1500 },
+          });
+          const fetchRes = await fetch(OLLAMA_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: ollamaBody });
+          if (!fetchRes.ok) throw new Error('Ollama error: ' + fetchRes.status);
+          const reader = fetchRes.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed) continue;
+              try {
+                const parsed = JSON.parse(trimmed);
+                const chunk = parsed?.message?.content || '';
+                if (chunk) { fullText += chunk; send({ event: 'node-chunk', nodeId, chunk }); }
+              } catch (_) {}
+            }
           }
         }
       } catch (err) {
@@ -4054,6 +4337,27 @@ Use bullet points. Start with a one-line headline. No intro pleasantries.` },
 
     send({ event: 'workflow-done' });
     res.end();
+    return;
+  }
+
+  // POST /api/projects/:id/rate — rate an agent message (thumbs up/down)
+  const rateMatch = path.match(/^\/api\/projects\/([^\/]+)\/rate$/);
+  if (req.method === 'POST' && rateMatch) {
+    const id = rateMatch[1];
+    const body = await readBody(req);
+    const { messageId, agentId, rating, model } = body;
+    if (!messageId || !agentId || (rating !== 1 && rating !== -1)) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'messageId, agentId, and rating (1 or -1) required' }));
+      return;
+    }
+    const ratingsFile = join(DATA_DIR, 'ratings.json');
+    let ratings = [];
+    try { ratings = JSON.parse(readFileSync(ratingsFile, 'utf8')); } catch (_) {}
+    ratings.push({ projectId: id, messageId, agentId, rating, model: model || null, timestamp: new Date().toISOString() });
+    writeFileSync(ratingsFile, JSON.stringify(ratings, null, 2), 'utf8');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true }));
     return;
   }
 
