@@ -3079,6 +3079,21 @@ button[onclick="newChat()"]:hover {
       <hr class="settings-divider" style="margin:18px 0 16px;">
       <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;">Output Generation</div>
 
+      <!-- HuggingFace FREE image gen -->
+      <div class="settings-provider" style="border:1px solid rgba(74,222,128,0.25);background:rgba(74,222,128,0.04);">
+        <div class="settings-provider-header">
+          <span style="font-size:16px;">🤗</span>
+          <span class="settings-provider-name">HuggingFace</span>
+          <span class="settings-provider-badge" style="background:rgba(74,222,128,0.15);color:#4ade80;border-color:rgba(74,222,128,0.3);">FREE · FLUX.1-schnell</span>
+          <a href="https://huggingface.co/settings/tokens" target="_blank" style="font-size:11px;color:var(--accent);margin-left:auto;">Get free token →</a>
+        </div>
+        <div class="settings-input-row">
+          <input class="settings-input" id="input-hf" type="password" placeholder="hf_..." autocomplete="off">
+          <button class="settings-save-btn" onclick="saveProviderKey('hf')">Save</button>
+        </div>
+        <div style="font-size:10px;color:var(--text3);padding:2px 0 6px;line-height:1.5;">Free account → huggingface.co → Settings → Access Tokens → New token (read). No credit card needed.</div>
+      </div>
+
       <div class="settings-provider">
         <div class="settings-provider-header">
           <span style="font-size:16px;">🎨</span>
@@ -6326,9 +6341,9 @@ function closeSettings() {
 }
 
 async function saveProviderKey(provider) {
-  const inputId  = { groq: 'input-groq', google: 'input-google', openrouter: 'input-openrouter', tavily: 'input-tavily', jina: 'input-jina', searxng: 'input-searxng', stability: 'input-stability', replicate: 'input-replicate', openaiTts: 'input-openai-tts', elevenLabs: 'input-elevenlabs' }[provider];
+  const inputId  = { groq: 'input-groq', google: 'input-google', openrouter: 'input-openrouter', tavily: 'input-tavily', jina: 'input-jina', searxng: 'input-searxng', stability: 'input-stability', replicate: 'input-replicate', openaiTts: 'input-openai-tts', elevenLabs: 'input-elevenlabs', hf: 'input-hf' }[provider];
   const statusId = { groq: 'status-groq', google: 'status-google', openrouter: 'status-openrouter', tavily: 'status-tavily' }[provider];
-  const keyField = { groq: 'groqKey', google: 'googleKey', openrouter: 'openrouterKey', tavily: 'tavilyKey', jina: 'jinaKey', searxng: 'searxngUrl', stability: 'stabilityKey', replicate: 'replicateKey', openaiTts: 'openaiTtsKey', elevenLabs: 'elevenLabsKey' }[provider];
+  const keyField = { groq: 'groqKey', google: 'googleKey', openrouter: 'openrouterKey', tavily: 'tavilyKey', jina: 'jinaKey', searxng: 'searxngUrl', stability: 'stabilityKey', replicate: 'replicateKey', openaiTts: 'openaiTtsKey', elevenLabs: 'elevenLabsKey', hf: 'hfToken' }[provider];
   const val = document.getElementById(inputId)?.value.trim();
   const statusEl = statusId ? document.getElementById(statusId) : null;
 

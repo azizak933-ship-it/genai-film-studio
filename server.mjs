@@ -289,6 +289,7 @@ function loadConfig() {
   if (process.env.REPLICATE_API_KEY)  cfg.replicateKey  = process.env.REPLICATE_API_KEY;
   if (process.env.OPENAI_TTS_KEY)     cfg.openaiTtsKey  = process.env.OPENAI_TTS_KEY;
   if (process.env.ELEVENLABS_API_KEY) cfg.elevenLabsKey = process.env.ELEVENLABS_API_KEY;
+  if (process.env.HF_TOKEN)           cfg.hfToken       = process.env.HF_TOKEN;
   return cfg;
 }
 function saveConfig(cfg) { writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf8'); }
@@ -3204,6 +3205,7 @@ ${new URL(req.url, 'http://localhost').searchParams.get('error') ? '<script>docu
       openrouterModel:CLOUD_PROVIDERS.openrouter.modelPriority.quality[0],
       stabilityKey:   cfg.stabilityKey   ? '***' + cfg.stabilityKey.slice(-4)   : '',
       replicateKey:   cfg.replicateKey   ? '***' + cfg.replicateKey.slice(-4)   : '',
+      hfToken:        cfg.hfToken        ? '***' + cfg.hfToken.slice(-4)        : '',
       elevenLabsKey:  cfg.elevenLabsKey  ? '***' + cfg.elevenLabsKey.slice(-4)  : '',
       openaiTtsKey:   cfg.openaiTtsKey   ? '***' + cfg.openaiTtsKey.slice(-4)   : '',
     }));
@@ -3221,6 +3223,7 @@ ${new URL(req.url, 'http://localhost').searchParams.get('error') ? '<script>docu
     if (body.searxngUrl    !== undefined) cfg.searxngUrl    = body.searxngUrl.trim();
     if (body.stabilityKey  !== undefined) cfg.stabilityKey  = body.stabilityKey.trim();
     if (body.replicateKey  !== undefined) cfg.replicateKey  = body.replicateKey.trim();
+    if (body.hfToken       !== undefined) cfg.hfToken       = body.hfToken.trim();
     if (body.elevenLabsKey !== undefined) cfg.elevenLabsKey = body.elevenLabsKey.trim();
     if (body.openaiTtsKey  !== undefined) cfg.openaiTtsKey  = body.openaiTtsKey.trim();
     saveConfig(cfg);
@@ -5386,8 +5389,27 @@ Base all prompts strictly on THIS scene's script, shot list, and storyboard abov
     const cfg = loadConfig();
     const fullPrompt = `${prompt}, ${style}`;
     let imgBase64 = null, mimeType = 'image/png', usedService = '';
+
+    // Try HuggingFace FLUX.1-schnell (free tier — just needs a free HF token)
+    if (!imgBase64 && cfg.hfToken) {
+      try {
+        const r = await fetch('https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${cfg.hfToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inputs: fullPrompt, parameters: { num_inference_steps: 4, width: 1024, height: 576 } }),
+          signal: AbortSignal.timeout(60000),
+        });
+        if (r.ok) {
+          const buf = await r.arrayBuffer();
+          imgBase64 = Buffer.from(buf).toString('base64');
+          mimeType = 'image/jpeg';
+          usedService = 'HuggingFace FLUX.1-schnell';
+        }
+      } catch (_) {}
+    }
+
     // Try Stability AI
-    if (cfg.stabilityKey) {
+    if (!imgBase64 && cfg.stabilityKey) {
       try {
         const r = await fetch('https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image', {
           method: 'POST',
