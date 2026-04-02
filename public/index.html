@@ -11,7 +11,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="FilmStudio">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <!-- XLSX loaded on demand, not at startup -->
   <script>
@@ -1877,6 +1880,432 @@
 }
 .agent-mention:hover .agent-mention-tooltip { display: block; }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   MOTION ONE + MODERN UI UPGRADE
+   Inspired by: Linear, Vercel, Raycast, Perplexity, Framer
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Global font upgrade ─────────────────────────────────────────────── */
+:root {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Refined color palette */
+  --bg-primary: #09090b;
+  --bg-secondary: #0f0f13;
+  --bg-elevated: #141418;
+  --bg-card: rgba(255,255,255,0.03);
+  --bg-card-hover: rgba(255,255,255,0.055);
+  --border-subtle: rgba(255,255,255,0.06);
+  --border-default: rgba(255,255,255,0.09);
+  --border-strong: rgba(255,255,255,0.14);
+  --text-primary: rgba(255,255,255,0.93);
+  --text-secondary: rgba(255,255,255,0.55);
+  --text-tertiary: rgba(255,255,255,0.32);
+  --accent-purple: #7c3aed;
+  --accent-purple-glow: rgba(124,58,237,0.25);
+  --accent-blue: #3b82f6;
+  --accent-teal: #14b8a6;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+}
+
+*, *::before, *::after { font-family: var(--font-sans); }
+
+/* ── Ambient background orbs ─────────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  top: -20vh;
+  left: -10vw;
+  width: 55vw;
+  height: 55vw;
+  background: radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 50%;
+  filter: blur(40px);
+}
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -15vh;
+  right: -5vw;
+  width: 40vw;
+  height: 40vw;
+  background: radial-gradient(circle, rgba(20,184,166,0.05) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 50%;
+  filter: blur(60px);
+}
+
+/* ── Sidebar refinement ──────────────────────────────────────────────── */
+#sidebar {
+  background: rgba(9,9,11,0.85) !important;
+  backdrop-filter: blur(20px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;
+  border-right: 1px solid var(--border-subtle) !important;
+}
+
+.sidebar-section {
+  opacity: 0; /* JS will animate in */
+}
+
+.agent-list-item {
+  border-radius: var(--radius-sm) !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
+  will-change: transform;
+}
+.agent-list-item:hover {
+  background: var(--bg-card-hover) !important;
+}
+.agent-list-item.active, .agent-list-item.selected {
+  background: rgba(124,58,237,0.12) !important;
+  border-left: 2px solid var(--accent-purple) !important;
+}
+
+/* ── Chat area refinement ────────────────────────────────────────────── */
+#chat-area {
+  background: var(--bg-primary) !important;
+}
+
+#chat-messages {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
+}
+#chat-messages::-webkit-scrollbar { width: 4px; }
+#chat-messages::-webkit-scrollbar-track { background: transparent; }
+#chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+#chat-messages::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
+
+/* ── Scroll progress bar ─────────────────────────────────────────────── */
+.chat-scroll-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-purple), var(--accent-teal));
+  transform-origin: left center;
+  transform: scaleX(0);
+  z-index: 10;
+  pointer-events: none;
+  transition: transform 0.1s linear;
+}
+
+/* ── Message cards ───────────────────────────────────────────────────── */
+.message-wrapper, .agent-message-card {
+  will-change: transform, opacity;
+}
+
+.agent-message-card {
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-lg) !important;
+  background: var(--bg-card) !important;
+  backdrop-filter: blur(8px) !important;
+  transition: border-color 0.2s ease, background 0.2s ease !important;
+}
+.agent-message-card:hover {
+  border-color: var(--border-default) !important;
+  background: var(--bg-card-hover) !important;
+}
+
+/* ── Agent header badge refinement ──────────────────────────────────── */
+.agent-badge, .model-badge, .agent-model-label {
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.04em !important;
+  padding: 2px 7px !important;
+  border-radius: 99px !important;
+  background: rgba(255,255,255,0.07) !important;
+  border: 1px solid var(--border-subtle) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* ── Input area glassmorphism ────────────────────────────────────────── */
+#input-area {
+  padding: 12px 16px 16px !important;
+  background: linear-gradient(to top, var(--bg-primary) 60%, transparent) !important;
+}
+
+.input-wrapper {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-xl) !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.02) inset,
+    0 8px 32px rgba(0,0,0,0.4) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.input-wrapper:focus-within {
+  border-color: rgba(124,58,237,0.4) !important;
+  box-shadow:
+    0 0 0 3px rgba(124,58,237,0.08),
+    0 8px 32px rgba(0,0,0,0.4) !important;
+}
+
+#message-input, .chat-textarea {
+  font-family: var(--font-sans) !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  color: var(--text-primary) !important;
+  caret-color: var(--accent-purple) !important;
+}
+
+/* ── Send button glow ────────────────────────────────────────────────── */
+#send-btn, button[id*="send"] {
+  background: var(--accent-purple) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  box-shadow: 0 0 16px rgba(124,58,237,0.35) !important;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease !important;
+  will-change: transform;
+}
+#send-btn:hover, button[id*="send"]:hover {
+  background: #6d28d9 !important;
+  box-shadow: 0 0 24px rgba(124,58,237,0.5) !important;
+}
+
+/* ── Mention popup glassmorphism ─────────────────────────────────────── */
+#mention-popup {
+  background: rgba(14,14,20,0.95) !important;
+  backdrop-filter: blur(20px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.5) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.04) inset,
+    0 16px 48px rgba(0,0,0,0.6),
+    0 4px 16px rgba(0,0,0,0.4) !important;
+  transform-origin: bottom center;
+  will-change: opacity, transform;
+}
+
+.mention-item {
+  border-radius: var(--radius-sm) !important;
+  transition: background 0.1s ease !important;
+}
+.mention-item:hover, .mention-item.selected {
+  background: rgba(124,58,237,0.15) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ── Modals glassmorphism ────────────────────────────────────────────── */
+.modal-content, .settings-modal, [class*="modal-content"] {
+  background: rgba(12,12,16,0.97) !important;
+  backdrop-filter: blur(24px) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.04) inset,
+    0 32px 80px rgba(0,0,0,0.7) !important;
+}
+
+/* ── Buttons general ─────────────────────────────────────────────────── */
+button {
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease !important;
+}
+button:active { opacity: 0.82 !important; }
+
+/* ── Top header / nav refinement ─────────────────────────────────────── */
+#top-bar, .top-nav, header, #header {
+  background: rgba(9,9,11,0.85) !important;
+  backdrop-filter: blur(16px) !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+}
+
+/* ── Panels (journal, notes, artifacts) ──────────────────────────────── */
+#journal-panel, #notes-panel, #artifacts-panel,
+[id$="-panel"] {
+  background: rgba(10,10,14,0.97) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.5) !important;
+  transform-origin: bottom center;
+  will-change: opacity, transform;
+}
+
+/* ── Canvas/workflow view ─────────────────────────────────────────────── */
+#canvas-view, #workflow-canvas {
+  background:
+    radial-gradient(circle at 20% 30%, rgba(124,58,237,0.04) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(20,184,166,0.03) 0%, transparent 50%),
+    #09090b !important;
+}
+
+/* ── Workflow nodes ───────────────────────────────────────────────────── */
+.canvas-node {
+  background: rgba(20,20,26,0.95) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.03) inset,
+    0 8px 24px rgba(0,0,0,0.4) !important;
+  backdrop-filter: blur(8px) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.canvas-node:hover {
+  border-color: var(--border-strong) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.05) inset,
+    0 12px 32px rgba(0,0,0,0.5) !important;
+}
+.canvas-node.selected, .canvas-node.active {
+  border-color: var(--accent-purple) !important;
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.15), 0 8px 24px rgba(0,0,0,0.4) !important;
+}
+
+/* ── Pipeline view ────────────────────────────────────────────────────── */
+.pipeline-step, .scene-card {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-md) !important;
+  transition: all 0.2s ease !important;
+}
+.pipeline-step:hover, .scene-card:hover {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--border-default) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ── Typography scale ─────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans) !important;
+  letter-spacing: -0.02em !important;
+  color: var(--text-primary) !important;
+}
+
+p, span, div, li {
+  font-family: var(--font-sans) !important;
+}
+
+code, pre, .code-block {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace !important;
+  font-size: 13px !important;
+}
+
+/* ── Cortex/Ops bar ───────────────────────────────────────────────────── */
+#cortex-status, .cortex-bar, [id*="cortex"] {
+  background: rgba(124,58,237,0.06) !important;
+  border: 1px solid rgba(124,58,237,0.18) !important;
+  border-radius: var(--radius-md) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* ── Export bar / bottom toolbar ──────────────────────────────────────── */
+#export-bar, .export-bar {
+  background: rgba(9,9,11,0.9) !important;
+  backdrop-filter: blur(12px) !important;
+  border-top: 1px solid var(--border-subtle) !important;
+}
+
+/* ── Selection highlight ──────────────────────────────────────────────── */
+::selection {
+  background: rgba(124,58,237,0.3) !important;
+  color: white !important;
+}
+
+/* ── Focus rings ──────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid rgba(124,58,237,0.5) !important;
+  outline-offset: 2px !important;
+}
+
+/* ── Tooltips ─────────────────────────────────────────────────────────── */
+[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(14,14,20,0.96);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 9999;
+  backdrop-filter: blur(8px);
+  color: var(--text-secondary);
+}
+
+/* ── Loading shimmer ──────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.loading-shimmer {
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.03) 25%,
+    rgba(255,255,255,0.07) 50%,
+    rgba(255,255,255,0.03) 75%
+  );
+  background-size: 200% auto;
+  animation: shimmer 1.5s linear infinite;
+}
+
+/* ── Streaming cursor ──────────────────────────────────────────────────── */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.streaming-cursor::after {
+  content: '\25CB';
+  display: inline-block;
+  animation: blink 1s step-end infinite;
+  color: var(--accent-purple);
+  margin-left: 1px;
+  font-size: 0.85em;
+  vertical-align: middle;
+}
+
+/* ── Gradient text utility ─────────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.gradient-text-purple {
+  background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── NEW agent badges ─────────────────────────────────────────────────── */
+[data-agent-id="distributor"] .agent-name::after,
+[data-agent-id="location-scout"] .agent-name::after,
+[data-agent-id="story"] .agent-name::after,
+[data-agent-id="character"] .agent-name::after,
+[data-agent-id="dialogue"] .agent-name::after {
+  content: 'NEW';
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(124,58,237,0.25);
+  color: #a78bfa;
+  border: 1px solid rgba(124,58,237,0.3);
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+/* ── Responsive refinements ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .input-wrapper {
+    border-radius: var(--radius-lg) !important;
+  }
+  .agent-message-card {
+    border-radius: var(--radius-md) !important;
+  }
+}
+
   </style>
 </head>
 <body>
@@ -2130,10 +2559,12 @@
         <div class="messages-inner" id="messages-inner">
           <div class="welcome" id="welcome">
             <div class="welcome-icon"><i data-lucide="clapperboard" style="width:48px;height:48px;color:var(--text3);"></i></div>
-            <h1>GenAI Film Studio</h1>
-            <div class="welcome-sub">33 AI agents across 9 production phases</div>
-            <div class="welcome-divider"></div>
-            <p>Chat with your entire film crew. Type <strong>@</strong> to mention a specific agent, or just talk and your active agents will respond.</p>
+            <h1 class="gradient-text" style="font-size:clamp(2rem,5vw,3.5rem);font-weight:700;letter-spacing:-0.03em;margin-bottom:0.5rem;">
+  Film Studio AI
+</h1>
+<p style="color:rgba(255,255,255,0.45);font-size:1rem;font-weight:400;letter-spacing:-0.01em;max-width:420px;margin:0 auto 2.5rem;line-height:1.6;">
+  42 specialized agents working in harmony.<br>From concept to final cut.
+</p>
             <div class="example-pills">
               <div class="example-pill" onclick="useExample(this)">Create a noir thriller set in 1940s Los Angeles with a femme fatale protagonist</div>
               <div class="example-pill" onclick="useExample(this)">Design a sci-fi short film about first contact, shot in a documentary style</div>
@@ -3203,10 +3634,8 @@ function showWelcome() {
   const inner = document.getElementById('messages-inner');
   inner.innerHTML = `<div class="welcome" id="welcome">
     <div class="welcome-icon"><i data-lucide="clapperboard" style="width:48px;height:48px;color:var(--text3);"></i></div>
-    <h1>GenAI Film Studio</h1>
-    <div class="welcome-sub">33 AI agents across 9 production phases</div>
-    <div class="welcome-divider"></div>
-    <p>Chat with your entire film crew. Type <strong>@</strong> to mention a specific agent, or just talk and your active agents will respond.</p>
+    <h1 class="gradient-text" style="font-size:clamp(2rem,5vw,3.5rem);font-weight:700;letter-spacing:-0.03em;margin-bottom:0.5rem;">Film Studio AI</h1>
+    <p style="color:rgba(255,255,255,0.45);font-size:1rem;font-weight:400;letter-spacing:-0.01em;max-width:420px;margin:0 auto 2.5rem;line-height:1.6;">42 specialized agents working in harmony.<br>From concept to final cut.</p>
     <div class="example-pills">
       <div class="example-pill" onclick="useExample(this)">Create a noir thriller set in 1940s Los Angeles with a femme fatale protagonist</div>
       <div class="example-pill" onclick="useExample(this)">Design a sci-fi short film about first contact, shot in a documentary style</div>
@@ -7428,6 +7857,100 @@ if ('serviceWorker' in navigator) {
       .catch(err => console.warn('[SW] registration failed:', err));
   });
 }
+</script>
+<script type="module">
+import { animate, inView, scroll, stagger } from "https://cdn.jsdelivr.net/npm/motion@12.38.0/+esm";
+
+// Store on window so non-module scripts can access
+window.Motion = { animate, inView, scroll, stagger };
+
+// ── ENTRANCE ANIMATIONS ──────────────────────────────────────────────────
+// Animate sidebar sections in on load
+inView('#sidebar', () => {
+  animate('.sidebar-section',
+    { opacity: [0, 1], x: [-12, 0] },
+    { duration: 0.4, delay: stagger(0.08), easing: [0.25, 0.1, 0.25, 1] }
+  );
+});
+
+// Animate chat messages as they enter viewport
+inView('.message-wrapper, .agent-message-card', (el) => {
+  animate(el, { opacity: [0, 1], y: [10, 0] }, { duration: 0.3, easing: [0.25, 0.1, 0.25, 1] });
+}, { amount: 0.1 });
+
+// ── WELCOME SCREEN ANIMATION ─────────────────────────────────────────────
+const welcomeEl = document.querySelector('.welcome-screen');
+if (welcomeEl) {
+  animate(welcomeEl, { opacity: [0, 1], y: [20, 0] }, { duration: 0.6, easing: [0.25, 0.1, 0.25, 1] });
+}
+
+// ── SMOOTH PANEL OPEN/CLOSE ──────────────────────────────────────────────
+// Patch togglePanel to animate
+const origTogglePanel = window.togglePanel;
+window.togglePanel = function(id) {
+  const panel = document.getElementById(id);
+  if (!panel) { origTogglePanel?.(id); return; }
+  const isOpen = panel.classList.contains('open');
+  if (!isOpen) {
+    origTogglePanel?.(id);
+    animate(panel, { opacity: [0, 1], y: [8, 0], scaleY: [0.97, 1] }, { duration: 0.25, easing: [0.25, 0.1, 0.25, 1] });
+  } else {
+    animate(panel, { opacity: [1, 0], y: [0, 8] }, { duration: 0.18 }).then(() => {
+      origTogglePanel?.(id);
+    });
+  }
+};
+
+// ── SIDEBAR AGENT HOVER ──────────────────────────────────────────────────
+document.addEventListener('mouseover', (e) => {
+  const agentItem = e.target.closest('.agent-list-item');
+  if (agentItem && !agentItem._motionBound) {
+    agentItem._motionBound = true;
+    agentItem.addEventListener('mouseenter', () => {
+      animate(agentItem, { x: [0, 3] }, { duration: 0.15 });
+    });
+    agentItem.addEventListener('mouseleave', () => {
+      animate(agentItem, { x: [3, 0] }, { duration: 0.15 });
+    });
+  }
+});
+
+// ── SEND BUTTON PULSE ON SEND ────────────────────────────────────────────
+document.addEventListener('click', (e) => {
+  const sendBtn = e.target.closest('#send-btn, .send-btn, button[id*="send"]');
+  if (sendBtn) {
+    animate(sendBtn, { scale: [1, 0.92, 1] }, { duration: 0.25, easing: 'ease-out' });
+  }
+});
+
+// ── MENTION POPUP ANIMATION ──────────────────────────────────────────────
+const mentionPopup = document.getElementById('mention-popup');
+if (mentionPopup) {
+  const observer = new MutationObserver(() => {
+    if (mentionPopup.classList.contains('visible') || mentionPopup.style.display === 'block') {
+      animate(mentionPopup, { opacity: [0, 1], y: [6, 0], scaleY: [0.95, 1] }, { duration: 0.2 });
+    }
+  });
+  observer.observe(mentionPopup, { attributes: true, attributeFilter: ['class', 'style'] });
+}
+
+// ── SCROLL PROGRESS BAR ──────────────────────────────────────────────────
+const chatMessages = document.getElementById('chat-messages');
+if (chatMessages) {
+  let progressBar = document.querySelector('.chat-scroll-progress');
+  if (!progressBar) {
+    progressBar = document.createElement('div');
+    progressBar.className = 'chat-scroll-progress';
+    chatMessages.parentElement?.prepend(progressBar);
+  }
+  chatMessages.addEventListener('scroll', () => {
+    const { scrollTop, scrollHeight, clientHeight } = chatMessages;
+    const progress = scrollTop / (scrollHeight - clientHeight);
+    progressBar.style.transform = `scaleX(${isNaN(progress) ? 0 : progress})`;
+  });
+}
+
+console.log('Motion One loaded');
 </script>
 </body>
 </html>
