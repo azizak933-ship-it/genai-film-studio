@@ -10,9 +10,37 @@ services:
         value: production
       - key: RENDER
         value: true
+
+      # ── AI Providers (values set in Render dashboard, never in code) ──
       - key: GROQ_API_KEY
         sync: false
       - key: GOOGLE_API_KEY
         sync: false
       - key: OPENROUTER_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+      # ── Image Generation ──────────────────────────────────────────────
+      - key: HF_TOKEN
+        sync: false
+      - key: STABILITY_API_KEY
+        sync: false
+      - key: REPLICATE_API_KEY
+        sync: false
+
+      # ── Text-to-Speech ────────────────────────────────────────────────
+      - key: OPENAI_TTS_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+
+      # ── Web Search ────────────────────────────────────────────────────
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: JINA_API_KEY
+        sync: false
+
+      # ── Auth (set a random string to password-protect the UI) ────────
+      - key: APP_TOKEN
         sync: false
