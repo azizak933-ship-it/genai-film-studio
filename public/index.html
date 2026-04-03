@@ -1417,11 +1417,54 @@
     #btn-mobile-menu svg { width: 20px; height: 20px; }
 
     @media (max-width: 768px) {
-      #sidebar { position: fixed; left: -260px; z-index: 100; transition: left 0.25s; }
-      #sidebar.open { left: 0; }
-      #main { width: 100%; }
-      #workflow-modes-bar { display: none; }
+      /* Sidebar slide-in */
+      #sidebar { position: fixed; left: -260px; z-index: 100; transition: left 0.25s; top: 0; bottom: 0; }
+      #sidebar.open { left: 0; box-shadow: 4px 0 24px rgba(0,0,0,0.6); }
+      #main { width: 100%; margin-left: 0 !important; }
+      #workflow-modes-bar { gap: 4px; padding: 6px 8px; overflow-x: auto; }
       #btn-mobile-menu { display: flex; }
+
+      /* Chat area */
+      #messages { padding: 12px 8px 8px; }
+      .message { padding: 10px 10px 6px; }
+      .msg-header { flex-wrap: wrap; }
+      #input-area { padding: 8px 10px 12px !important; }
+      #chat-input { font-size: 15px; padding: 12px 50px 12px 14px; }
+      .input-actions { gap: 4px; }
+      .input-action-btn span { display: none; }
+      .input-action-btn { padding: 5px 7px; min-width: unset; }
+
+      /* Top nav tabs */
+      #workflow-modes-bar button { font-size: 11px; padding: 5px 10px; }
+
+      /* Settings modal */
+      .settings-box { width: calc(100vw - 24px) !important; max-height: 85vh; overflow-y: auto; margin: 12px; }
+
+      /* Pipeline view */
+      #pipeline-body { flex-direction: column; }
+      #pipeline-left, #pipeline-right { width: 100%; min-width: unset; }
+
+      /* Arena view */
+      #arena-layout { flex-direction: column; }
+      #arena-left, #arena-right { width: 100%; min-width: unset; }
+
+      /* Canvas toolbar */
+      #canvas-toolbar { flex-wrap: wrap; gap: 4px; padding: 6px 8px; }
+      .canvas-zoom-controls { display: none; }
+
+      /* Panels */
+      #journal-panel, #notes-panel, #artifacts-panel { max-height: 55vh; }
+
+      /* Hide decorative overlays on mobile for perf */
+      #particle-canvas, #noise-overlay { display: none; }
+    }
+
+    @media (max-width: 480px) {
+      .msg-actions { flex-wrap: wrap; gap: 4px; }
+      .pip-card { padding: 12px; }
+      #arena-agent-grid { max-height: 150px; }
+      .debate-entry { padding: 8px 10px; }
+      h1, .welcome h1 { font-size: 1.8rem !important; }
     }
 
     /* ── Premium Transitions ──────────────────── */
@@ -2659,6 +2702,10 @@ button[onclick="newChat()"]:hover {
               <i data-lucide="globe" style="width:14px;height:14px;"></i>
               <span id="web-search-toggle-label">Web Search</span>
             </button>
+            <button class="input-action-btn" id="btn-imagine" onclick="triggerImagine()" title="Generate image">
+              <i data-lucide="image" style="width:14px;height:14px;"></i>
+              <span>Imagine</span>
+            </button>
             <div style="flex:1"></div>
             <span id="attach-count-label" style="font-size:11px;color:var(--text3);display:none"></span>
           </div>
@@ -3712,6 +3759,7 @@ function renderMessages(messages, pinnedIds) {
           <button class="msg-action-btn ${pinClass}" onclick="pinMessage(this.closest('.message'))">${isPinned ? '<i data-lucide="star"></i>' : '<i data-lucide="pin"></i>'} Pin</button>
           <button class="msg-action-btn rate-btn" onclick="rateMessage(this.closest('.message'), 1)" title="Thumbs up"><i data-lucide="thumbs-up"></i></button>
           <button class="msg-action-btn rate-btn" onclick="rateMessage(this.closest('.message'), -1)" title="Thumbs down"><i data-lucide="thumbs-down"></i></button>
+          <button class="msg-action-btn tts-btn" onclick="speakMessage(this, this.closest('.message'))" title="Read aloud"><i data-lucide="volume-2"></i> Speak</button>
         </div>
       </div>`;
     }
@@ -3741,17 +3789,32 @@ function getAgentColor(id) {
   return a ? a.color : '#888';
 }
 
+let _userScrolledUp = false;
+
+function _initScrollTracking() {
+  const el = document.getElementById('messages');
+  if (!el) return;
+  el.addEventListener('wheel', (e) => {
+    if (e.deltaY < 0) { _userScrolledUp = true; updateScrollBtn(); }
+  }, { passive: true });
+  el.addEventListener('touchmove', () => { _userScrolledUp = true; }, { passive: true });
+}
+document.addEventListener('DOMContentLoaded', _initScrollTracking);
+
 function isNearBottom() {
   const el = document.getElementById('messages');
   if (!el) return true;
-  return el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+  const dist = el.scrollHeight - el.scrollTop - el.clientHeight;
+  if (dist < 60) _userScrolledUp = false;
+  return dist < 120;
 }
 
 function scrollToBottom(force) {
   const el = document.getElementById('messages');
   if (!el) return;
-  if (force || isNearBottom()) {
+  if (force || (!_userScrolledUp && isNearBottom())) {
     el.scrollTop = el.scrollHeight;
+    if (force) _userScrolledUp = false;
   }
   updateScrollBtn();
 }
@@ -3762,11 +3825,72 @@ function updateScrollBtn() {
   btn.style.display = isNearBottom() ? 'none' : 'flex';
 }
 
+// ── Image generation via /imagine ────────────────────────────────────────────
+function triggerImagine() {
+  const input = document.getElementById('chat-input');
+  if (!input.value.trim().startsWith('/imagine')) {
+    input.value = '/imagine ' + input.value.trim();
+  }
+  input.focus();
+}
+
+async function sendImagineCommand(prompt) {
+  if (!currentProjectId) await createNewChat();
+  const inner = document.getElementById('messages-inner');
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.style.display = 'none';
+
+  // Show user bubble
+  const userDiv = document.createElement('div');
+  userDiv.className = 'msg user-msg';
+  userDiv.innerHTML = `<div class="msg-content"><i data-lucide="image" style="width:13px;height:13px;display:inline-block;vertical-align:middle;margin-right:5px;"></i>${escHtml(prompt)}</div>`;
+  inner.appendChild(userDiv);
+  if (typeof lucide !== 'undefined') lucide.createIcons({ el: userDiv });
+  scrollToBottom(true);
+
+  // Show generating card
+  const card = document.createElement('div');
+  card.className = 'msg agent-msg';
+  card.innerHTML = `<div class="msg-content" id="imagine-result" style="color:var(--text3);font-size:13px;"><span class="loading-dots"></span> Generating image…</div>`;
+  inner.appendChild(card);
+  scrollToBottom(true);
+
+  setStreaming(true);
+  try {
+    const r = await fetch('/api/generate/image', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectId: currentProjectId, prompt }),
+    });
+    const data = await r.json();
+    const el = document.getElementById('imagine-result');
+    if (data.image) {
+      el.innerHTML = `<div style="margin-bottom:6px;font-size:11px;color:var(--text3);">🎨 ${escHtml(data.service || 'Image')} · ${escHtml(prompt)}</div><img src="data:${data.mimeType || 'image/jpeg'};base64,${data.image}" style="max-width:100%;border-radius:10px;display:block;" alt="Generated image">`;
+      if (data.url) { projectArtifacts.unshift({ type: 'image', url: data.url, prompt, service: data.service || 'Image' }); renderArtifacts(); }
+    } else {
+      el.innerHTML = `<span style="color:var(--danger);">Image generation failed: ${escHtml(data.error || 'No image returned')}. Add a HuggingFace or Stability AI key in Settings.</span>`;
+    }
+  } catch(e) {
+    const el = document.getElementById('imagine-result');
+    if (el) el.innerHTML = `<span style="color:var(--danger);">Error: ${escHtml(e.message)}</span>`;
+  }
+  setStreaming(false);
+  scrollToBottom(true);
+}
+
 // ── Send Message ─────────────────────────────────────────────────────────────
 async function sendMessage() {
   const input = document.getElementById('chat-input');
   const msg = input.value.trim();
   if ((!msg && chatAttachments.length === 0) || isStreaming) return;
+
+  // Handle /imagine command
+  if (msg.startsWith('/imagine ') || msg === '/imagine') {
+    const prompt = msg.slice(9).trim() || 'cinematic scene';
+    input.value = '';
+    input.style.height = '';
+    await sendImagineCommand(prompt);
+    return;
+  }
 
   closeMentionPopup();
 
@@ -3995,7 +4119,14 @@ function handleSSE(data) {
 
   if (data.event === 'agent-error') {
     const el = document.getElementById('content-' + data.agentId);
-    if (el) { el.innerHTML = `<span style="color:var(--danger);font-size:12px;">Error: ${escHtml(data.error)}</span>`; }
+    if (el) {
+      el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;">
+        <i data-lucide="alert-triangle" style="width:14px;height:14px;color:#ef4444;flex-shrink:0;"></i>
+        <span style="color:#ef4444;font-size:12px;flex:1;">${escHtml(data.error || 'Agent failed — check your API keys in Settings')}</span>
+        <button class="msg-action-btn" style="font-size:10px;padding:2px 8px;" onclick="retryResponse(this.closest('.message'))">Retry</button>
+      </div>`;
+      if (typeof lucide !== 'undefined') lucide.createIcons({ el: el });
+    }
     return;
   }
 
@@ -4604,6 +4735,43 @@ function useExample(el) {
   document.getElementById('chat-input').value = el.textContent;
   autoResizeInput();
   document.getElementById('chat-input').focus();
+}
+
+// ── TTS: Speak agent message ──────────────────────────────────────────────────
+async function speakMessage(btn, msgEl) {
+  if (!msgEl || !currentProjectId) return;
+  const contentEl = msgEl.querySelector('.msg-content');
+  const text = contentEl ? contentEl.textContent.trim() : '';
+  if (!text) return;
+
+  // Try Web Speech API first (free, no key needed)
+  if ('speechSynthesis' in window) {
+    if (window.speechSynthesis.speaking) { window.speechSynthesis.cancel(); btn.innerHTML = '<i data-lucide="volume-2"></i> Speak'; if (typeof lucide !== 'undefined') lucide.createIcons({ el: btn }); return; }
+    const utter = new SpeechSynthesisUtterance(text.slice(0, 3000));
+    utter.rate = 0.95; utter.pitch = 1;
+    utter.onstart = () => { btn.innerHTML = '<i data-lucide="volume-x"></i> Stop'; if (typeof lucide !== 'undefined') lucide.createIcons({ el: btn }); };
+    utter.onend = () => { btn.innerHTML = '<i data-lucide="volume-2"></i> Speak'; if (typeof lucide !== 'undefined') lucide.createIcons({ el: btn }); };
+    window.speechSynthesis.speak(utter);
+    return;
+  }
+
+  // Fallback: server TTS API
+  btn.disabled = true; btn.textContent = '⏳';
+  try {
+    const r = await fetch('/api/generate/tts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectId: currentProjectId, text: text.slice(0, 1000), voice: 'alloy' }),
+    });
+    const data = await r.json();
+    if (data.audio) {
+      const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
+      audio.play();
+      btn.textContent = '🔊';
+      audio.onended = () => { btn.disabled = false; btn.innerHTML = '<i data-lucide="volume-2"></i> Speak'; if (typeof lucide !== 'undefined') lucide.createIcons({ el: btn }); };
+    } else {
+      btn.disabled = false; btn.textContent = '🔇';
+    }
+  } catch(e) { btn.disabled = false; btn.textContent = '🔇'; }
 }
 
 // ── Copy / Try Again / Continue ──────────────────────────────────────────────
@@ -7697,18 +7865,41 @@ async function loadDebateWinners() {
     const el = document.getElementById('arena-winners-list');
     if (!el) return;
     if (!winners.length) {
-      el.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:8px 0;text-align:center;">No winners yet</div>';
+      el.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:8px 0;text-align:center;">Run a debate to see winners here</div>';
       return;
     }
-    el.innerHTML = winners.slice(0, 20).map(w => {
-      const d = new Date(w.timestamp);
-      const dateStr = d.toLocaleDateString();
-      return `<div style="padding:8px 0;border-bottom:1px solid var(--border);">
-        <div style="font-size:11px;font-weight:600;color:#f59e0b;">🏆 ${escHtml(w.winner?.agentName || 'Unknown')}</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(w.topic)}</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:2px;">${dateStr} · ${w.participants?.length || 0} agents</div>
+    // Build win-count leaderboard
+    const counts = {};
+    winners.forEach(w => {
+      const name = w.winner?.agentName || 'Unknown';
+      const emoji = w.winner?.agentEmoji || '🤖';
+      if (!counts[name]) counts[name] = { emoji, wins: 0, debates: [] };
+      counts[name].wins++;
+      counts[name].debates.push({ topic: w.topic, date: w.timestamp });
+    });
+    const ranked = Object.entries(counts).sort((a,b) => b[1].wins - a[1].wins);
+    const medals = ['🥇','🥈','🥉'];
+    const leaderboard = `<div style="margin-bottom:10px;">
+      ${ranked.slice(0,5).map(([name,info],i) => `
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 6px;border-radius:7px;background:${i===0?'rgba(245,158,11,0.08)':'transparent'};margin-bottom:2px;">
+          <span style="font-size:15px;width:20px;text-align:center;">${medals[i]||'·'}</span>
+          <span style="font-size:15px;">${info.emoji}</span>
+          <span style="font-size:12px;font-weight:600;color:var(--text);flex:1;">${escHtml(name)}</span>
+          <span style="font-size:11px;font-weight:700;color:#f59e0b;background:rgba(245,158,11,0.12);padding:2px 7px;border-radius:5px;">${info.wins}W</span>
+        </div>`).join('')}
+    </div>
+    <div style="font-size:10px;color:var(--text3);border-top:1px solid var(--border);padding-top:8px;margin-top:4px;">Recent debates</div>
+    ${winners.slice(0,8).map(w => {
+      const d = new Date(w.timestamp).toLocaleDateString();
+      return `<div style="padding:5px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;">
+        <span style="font-size:12px;">${w.winner?.agentEmoji||'🤖'}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(w.topic)}</div>
+          <div style="font-size:10px;color:var(--text3);">${d} · won by ${escHtml(w.winner?.agentName||'?')}</div>
+        </div>
       </div>`;
-    }).join('');
+    }).join('')}`;
+    el.innerHTML = leaderboard;
   } catch (e) {}
 }
 
@@ -7859,7 +8050,19 @@ async function deleteNote(noteId) {
 let projectArtifacts = [];
 
 async function loadArtifacts() {
-  // Artifacts are stored server-side; we just show what we generated this session
+  if (!currentProjectId) { renderArtifacts(); return; }
+  try {
+    const r = await fetch(`/api/projects/${currentProjectId}/artifacts`);
+    const items = await r.json();
+    // Merge server items with in-session ones, deduplicate by url
+    const seen = new Set(projectArtifacts.map(a => a.url));
+    items.forEach(item => {
+      if (!seen.has(item.url)) {
+        projectArtifacts.push({ type: item.type, url: item.url, prompt: item.filename, service: 'Saved' });
+        seen.add(item.url);
+      }
+    });
+  } catch(e) {}
   renderArtifacts();
 }
 
@@ -7867,31 +8070,39 @@ function renderArtifacts() {
   const body = document.getElementById('artifacts-body');
   if (!body) return;
   if (!projectArtifacts.length) {
-    body.innerHTML = '<div style="color:var(--text3);font-size:12px;">No artifacts yet. Generate an image or TTS audio below.</div>';
+    body.innerHTML = `<div style="color:var(--text3);font-size:12px;padding:12px 0;text-align:center;">
+      <div style="font-size:24px;margin-bottom:6px;">🎨</div>
+      No artifacts yet — use <b>/imagine</b> in chat or the Generate form below.
+    </div>`;
     return;
   }
-  body.innerHTML = projectArtifacts.map(a => {
-    if (a.type === 'image') {
-      return `<div class="artifact-card">
-        <img class="artifact-thumb" src="${escHtml(a.url)}" alt="artifact">
-        <div class="artifact-info">
-          <div class="art-name">${escHtml(a.prompt?.slice(0, 60) || 'Image')}</div>
-          <div class="art-meta">${escHtml(a.service)} · Image</div>
-        </div>
-        <a class="artifact-dl" href="${escHtml(a.url)}" download>↓ Save</a>
-      </div>`;
-    } else {
-      return `<div class="artifact-card">
+  const images = projectArtifacts.filter(a => a.type === 'image');
+  const audio  = projectArtifacts.filter(a => a.type === 'audio');
+  let html = '';
+  if (images.length) {
+    html += `<div style="font-size:10px;color:var(--text3);margin-bottom:6px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">Images (${images.length})</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;margin-bottom:10px;">
+    ${images.map(a => `
+      <div style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:16/9;background:var(--bg4);border:1px solid var(--border);">
+        <img src="${escHtml(a.url)}" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy" onclick="window.open('${escHtml(a.url)}','_blank')" title="${escHtml(a.prompt?.slice(0,80)||'')}">
+        <a href="${escHtml(a.url)}" download style="position:absolute;bottom:3px;right:3px;background:rgba(0,0,0,0.7);color:#fff;font-size:10px;padding:2px 5px;border-radius:4px;text-decoration:none;">↓</a>
+      </div>`).join('')}
+    </div>`;
+  }
+  if (audio.length) {
+    html += `<div style="font-size:10px;color:var(--text3);margin-bottom:6px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">Audio (${audio.length})</div>`;
+    html += audio.map(a => `
+      <div class="artifact-card">
         <div class="artifact-audio">🔊</div>
         <div class="artifact-info">
-          <div class="art-name">${escHtml(a.text?.slice(0, 60) || 'Audio')}</div>
-          <div class="art-meta">${escHtml(a.service)} · Audio</div>
+          <div class="art-name">${escHtml((a.text||a.prompt||'Audio').slice(0,60))}</div>
+          <div class="art-meta">${escHtml(a.service||'TTS')} · Audio</div>
           <audio controls style="width:100%;height:22px;margin-top:4px;"><source src="${escHtml(a.url)}"></audio>
         </div>
-        <a class="artifact-dl" href="${escHtml(a.url)}" download>↓ Save</a>
-      </div>`;
-    }
-  }).join('');
+        <a class="artifact-dl" href="${escHtml(a.url)}" download>↓</a>
+      </div>`).join('');
+  }
+  body.innerHTML = html;
 }
 
 async function generateImage() {
@@ -8059,51 +8270,10 @@ console.log('Motion One loaded');
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/TextPlugin.min.js"></script>
 
-<!-- Lenis smooth scroll -->
-<script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
-
 <!-- Three.js for particle background -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
 <style>
-/* ── Custom Cursor ────────────────────────────────────────────────── */
-* { cursor: none !important; }
-#custom-cursor {
-  position: fixed;
-  width: 12px; height: 12px;
-  background: #7c3aed;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 999999;
-  transform: translate(-50%, -50%);
-  transition: width 0.2s ease, height 0.2s ease, background 0.2s ease, opacity 0.2s ease;
-  mix-blend-mode: normal;
-  box-shadow: 0 0 12px rgba(124,58,237,0.8), 0 0 24px rgba(124,58,237,0.4);
-}
-#custom-cursor-ring {
-  position: fixed;
-  width: 36px; height: 36px;
-  border: 1px solid rgba(124,58,237,0.5);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 999998;
-  transform: translate(-50%, -50%);
-  transition: width 0.35s ease, height 0.35s ease, border-color 0.2s ease, opacity 0.2s ease;
-}
-#custom-cursor.hovering {
-  width: 6px; height: 6px;
-  background: #a78bfa;
-}
-#custom-cursor-ring.hovering {
-  width: 52px; height: 52px;
-  border-color: rgba(167,139,250,0.6);
-  border-width: 1.5px;
-}
-#custom-cursor.clicking {
-  width: 8px; height: 8px;
-  box-shadow: 0 0 20px rgba(124,58,237,1), 0 0 40px rgba(124,58,237,0.6);
-}
-
 /* ── Three.js particle canvas ─────────────────────────────────────── */
 #particle-canvas {
   position: fixed;
@@ -8121,21 +8291,7 @@ console.log('Motion One loaded');
 .char {
   display: inline-block;
   opacity: 0;
-  transform: translateY(30px) rotateX(-90deg);
-  transform-origin: top center;
-}
-
-/* ── Glitch flicker on title ──────────────────────────────────────── */
-@keyframes glitch {
-  0%, 100% { text-shadow: none; transform: none; }
-  92% { text-shadow: none; transform: none; }
-  93% { text-shadow: -2px 0 #7c3aed, 2px 0 #06b6d4; transform: skewX(-1deg); }
-  94% { text-shadow: none; transform: none; }
-  96% { text-shadow: -1px 0 #a78bfa; transform: skewX(0.5deg); }
-  97% { text-shadow: none; transform: none; }
-}
-.glitch-text {
-  animation: glitch 6s infinite;
+  transform: translateY(20px);
 }
 
 /* ── Magnetic button effect ────────────────────────────────────────── */
@@ -8225,10 +8381,14 @@ console.log('Motion One loaded');
     </div>
     <div id="noise-overlay"></div>
     <div id="scroll-progress-line"></div>
-    <div id="custom-cursor"></div>
-    <div id="custom-cursor-ring"></div>
     <canvas id="particle-canvas"></canvas>
   `);
+
+  // Hard failsafe — remove loader after 4s no matter what
+  setTimeout(() => {
+    const l = document.getElementById('page-loader');
+    if (l) { l.remove(); try { initAnimations(); } catch(e) {} }
+  }, 4000);
 
   // ── Wait for everything ────────────────────────────────────────────
   window.addEventListener('load', function() {
@@ -8244,12 +8404,16 @@ console.log('Motion One loaded');
         clearInterval(loadInterval);
         loaderBar.style.width = '100%';
         setTimeout(() => {
-          gsap.to(loader, {
-            yPercent: -100,
-            duration: 0.9,
-            ease: 'power3.inOut',
-            onComplete: () => { loader.remove(); initAnimations(); }
-          });
+          try {
+            gsap.to(loader, {
+              yPercent: -100,
+              duration: 0.9,
+              ease: 'power3.inOut',
+              onComplete: () => { loader.remove(); initAnimations(); }
+            });
+          } catch(e) {
+            loader.remove(); initAnimations();
+          }
         }, 300);
       }
       loaderBar.style.width = progress + '%';
@@ -8258,24 +8422,7 @@ console.log('Motion One loaded');
     function initAnimations() {
 
       // ── GSAP SETUP ───────────────────────────────────────────────────
-      gsap.registerPlugin(ScrollTrigger, TextPlugin);
-
-      // ── LENIS SMOOTH SCROLL ──────────────────────────────────────────
-      let lenis;
-      try {
-        lenis = new Lenis({
-          duration: 1.3,
-          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-          orientation: 'vertical',
-          smoothWheel: true,
-        });
-        function raf(time) {
-          lenis.raf(time);
-          ScrollTrigger.update();
-          requestAnimationFrame(raf);
-        }
-        requestAnimationFrame(raf);
-      } catch(e) { console.log('Lenis not available'); }
+      try { gsap.registerPlugin(ScrollTrigger, TextPlugin); } catch(e) {}
 
       // ── THREE.JS PARTICLE BACKGROUND ────────────────────────────────
       try {
@@ -8364,40 +8511,6 @@ console.log('Motion One loaded');
         animateParticles();
       } catch(e) { console.log('Three.js particles error:', e); }
 
-      // ── CUSTOM CURSOR ────────────────────────────────────────────────
-      const cursor = document.getElementById('custom-cursor');
-      const ring   = document.getElementById('custom-cursor-ring');
-      if (cursor && ring) {
-        let cx = 0, cy = 0, rx = 0, ry = 0;
-        document.addEventListener('mousemove', (e) => {
-          cx = e.clientX; cy = e.clientY;
-          gsap.to(cursor, { x: cx, y: cy, duration: 0.1, ease: 'power2.out' });
-        });
-        // Ring follows with lag
-        function updateRing() {
-          rx += (cx - rx) * 0.1;
-          ry += (cy - ry) * 0.1;
-          gsap.set(ring, { x: rx, y: ry });
-          requestAnimationFrame(updateRing);
-        }
-        updateRing();
-        // Hover states
-        document.addEventListener('mouseover', (e) => {
-          if (e.target.closest('button, a, input, textarea, select, [onclick], .chat-item, .agent-list-item, .example-card, .quick-prompt')) {
-            cursor.classList.add('hovering');
-            ring.classList.add('hovering');
-          }
-        });
-        document.addEventListener('mouseout', (e) => {
-          if (e.target.closest('button, a, input, textarea, select, [onclick], .chat-item, .agent-list-item, .example-card, .quick-prompt')) {
-            cursor.classList.remove('hovering');
-            ring.classList.remove('hovering');
-          }
-        });
-        document.addEventListener('mousedown', () => cursor.classList.add('clicking'));
-        document.addEventListener('mouseup',   () => cursor.classList.remove('clicking'));
-      }
-
       // ── SCROLL PROGRESS LINE ─────────────────────────────────────────
       const progressLine = document.getElementById('scroll-progress-line');
       if (progressLine) {
@@ -8430,11 +8543,7 @@ console.log('Motion One loaded');
       }
 
       // Animate welcome screen text
-      const welcomeTitle = document.querySelector('.welcome-title, .welcome-screen h1, h1');
-      if (welcomeTitle) {
-        welcomeTitle.classList.add('glitch-text');
-        splitAndAnimate('.welcome-title, .welcome-screen h1, h1', 0.04);
-      }
+      splitAndAnimate('.welcome-title, .welcome-screen h1, h1', 0.04);
 
       // ── MAGNETIC BUTTONS ──────────────────────────────────────────────
       document.querySelectorAll('#btn-send, button[onclick="newChat()"], .workflow-mode-btn').forEach(btn => {

@@ -2880,9 +2880,11 @@ async function streamAgentChat(agent, message, contextMessages, send, projectId,
 }
 
 // ── Stream a single agent (pipeline mode) ────────────────────────────────────
-async function streamAgentPipeline(agent, message, onChunk) {
+async function streamAgentPipeline(agent, message, onChunk, projectId = null) {
+  const agentMemCtx = buildAgentMemoryContext(agent.id, projectId);
+  const systemContent = agentMemCtx ? agentMemCtx + agent.pipelineSystem : agent.pipelineSystem;
   const messages = [
-    { role: 'system', content: agent.pipelineSystem },
+    { role: 'system', content: systemContent },
     { role: 'user', content: message },
   ];
 
@@ -2896,6 +2898,7 @@ async function streamAgentPipeline(agent, message, onChunk) {
   const cfg = loadConfig();
   const assignment = AGENT_CLOUD[agent.id];
   const hasAnyCloudKey = assignment && (
+    cfg.claudeKey?.trim() ||
     (assignment.provider === 'groq' && cfg.groqKey?.trim()) ||
     (assignment.provider === 'google' && cfg.googleKey?.trim()) ||
     (assignment.provider === 'openrouter' && cfg.openrouterKey?.trim()) ||
@@ -3699,7 +3702,7 @@ ${new URL(req.url, 'http://localhost').searchParams.get('error') ? '<script>docu
     try {
       const threadCfg = loadConfig();
       const threadAssignment = AGENT_CLOUD[agent.id];
-      const threadHasCloud = threadAssignment && (threadCfg.groqKey?.trim() || threadCfg.googleKey?.trim() || threadCfg.openrouterKey?.trim());
+      const threadHasCloud = threadAssignment && (threadCfg.claudeKey?.trim() || threadCfg.groqKey?.trim() || threadCfg.googleKey?.trim() || threadCfg.openrouterKey?.trim());
       let usedCloud = false;
 
       if (threadHasCloud) {
@@ -3947,7 +3950,7 @@ ${new URL(req.url, 'http://localhost').searchParams.get('error') ? '<script>docu
       try {
         const fullText = await streamAgentPipeline(agent, message, (chunk) => {
           send({ event: 'agent-chunk', agentId: agent.id, chunk });
-        });
+        }, projectId);
         outputs[agent.id] = fullText;
         completed++;
         send({ event: 'agent-done', agentId: agent.id, index: i });
@@ -5620,6 +5623,23 @@ Base all prompts strictly on THIS scene's script, shot list, and storyboard abov
     const fdx = `<?xml version="1.0" encoding="UTF-8"?>\n<FinalDraft DocumentType="Script" Template="No" Version="2">\n  <Content>\n${elements.join('\n')}\n  </Content>\n  <TitlePage><Content><Paragraph><Text>${title.replace(/&/g,'&amp;')}</Text></Paragraph></Content></TitlePage>\n</FinalDraft>`;
     res.writeHead(200, { 'Content-Type': 'application/xml', 'Content-Disposition': `attachment; filename="${title.replace(/[^a-z0-9]/gi,'_')}.fdx"` });
     res.end(fdx);
+    return;
+  }
+
+  // ── Artifacts List ─────────────────────────────────────────────────────────
+  const artifactsListMatch = path.match(/^\/api\/projects\/([^\/]+)\/artifacts$/);
+  if (req.method === 'GET' && artifactsListMatch) {
+    const pid = artifactsListMatch[1];
+    const artDir = join(ARTIFACTS_DIR, pid);
+    if (!existsSync(artDir)) { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end('[]'); return; }
+    const files = readdirSync(artDir).sort().reverse().slice(0, 50);
+    const items = files.map(f => {
+      const ext = f.split('.').pop().toLowerCase();
+      const type = ['mp3','wav','ogg'].includes(ext) ? 'audio' : 'image';
+      return { filename: f, url: `/api/artifacts/${pid}/${f}`, type, timestamp: f.split('-')[0] };
+    });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(items));
     return;
   }
 
