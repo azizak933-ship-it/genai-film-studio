@@ -356,6 +356,31 @@
     .note-card:last-child { border-bottom: none; }
     .note-card .nc-meta { font-size: 10px; color: var(--text3); margin-bottom: 2px; display: flex; gap: 6px; align-items: center; }
     .note-card .nc-unread { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; flex-shrink: 0; }
+    /* ── Auto-rendered images (Level-3) ─── */
+    .agent-auto-img {
+      margin-top: 10px; border-radius: 10px; overflow: hidden;
+      border: 1px solid var(--border2); background: var(--bg3);
+    }
+    .agent-auto-img-header {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 10px; font-size: 10px; color: var(--text3);
+      border-bottom: 1px solid var(--border);
+    }
+    .agent-auto-img img {
+      width: 100%; display: block; cursor: zoom-in;
+      max-height: 420px; object-fit: cover;
+    }
+    .agent-auto-img-prompt {
+      padding: 5px 10px; font-size: 10px; color: var(--text3);
+      border-top: 1px solid var(--border); line-height: 1.4;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .agent-auto-img-skeleton {
+      height: 180px; background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4) 50%, var(--bg3) 75%);
+      background-size: 200% 100%; animation: shimmer 1.5s infinite;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
     /* Artifacts */
     .artifact-card { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
     .artifact-card:last-child { border-bottom: none; }
@@ -4117,6 +4142,53 @@ function handleSSE(data) {
     if (el && agentBuffers[data.agentId]) {
       el.innerHTML = highlightAgentNames(agentBuffers[data.agentId]);
     }
+    return;
+  }
+
+  // ── Level-3 autonomous image events ─────────────────────────────────────────
+  if (data.event === 'agent-image-start') {
+    const msgEl = document.querySelector(`[data-agent-id="${data.agentId}"]`);
+    if (!msgEl) return;
+    const imgWrap = document.createElement('div');
+    imgWrap.className = 'agent-auto-img';
+    imgWrap.id = `auto-img-${data.agentId}-${Date.now()}`;
+    imgWrap.innerHTML = `
+      <div class="agent-auto-img-header">
+        <i data-lucide="sparkles" style="width:11px;height:11px;color:var(--accent);"></i>
+        <span style="color:var(--accent);">Rendering visual…</span>
+        <span style="margin-left:auto;opacity:0.6;">${escHtml(data.prompt?.slice(0,60))}…</span>
+      </div>
+      <div class="agent-auto-img-skeleton" id="skeleton-${imgWrap.id}"></div>`;
+    msgEl.querySelector('.msg-content')?.after(imgWrap);
+    if (typeof lucide !== 'undefined') lucide.createIcons({ el: imgWrap });
+    scrollToBottom();
+    return;
+  }
+
+  if (data.event === 'agent-image') {
+    // Find the most recent skeleton for this agent and replace it
+    const skeletons = document.querySelectorAll(`[data-agent-id="${data.agentId}"] .agent-auto-img-skeleton`);
+    const skeleton = skeletons[skeletons.length - 1];
+    const wrap = skeleton?.closest('.agent-auto-img');
+    if (wrap) {
+      wrap.querySelector('.agent-auto-img-header').innerHTML = `
+        <i data-lucide="image" style="width:11px;height:11px;color:#22c55e;"></i>
+        <span style="color:#22c55e;">Auto-rendered · ${escHtml(data.service || 'FLUX')}</span>
+        <a href="${escHtml(data.url)}" download style="margin-left:auto;color:var(--accent);font-size:10px;">↓ Save</a>`;
+      skeleton.outerHTML = `<img src="${escHtml(data.url)}" alt="Auto-render" onclick="window.open(this.src,'_blank')" loading="lazy">`;
+      wrap.insertAdjacentHTML('beforeend', `<div class="agent-auto-img-prompt">🎨 ${escHtml(data.prompt || '')}</div>`);
+      if (typeof lucide !== 'undefined') lucide.createIcons({ el: wrap });
+      projectArtifacts.unshift({ type: 'image', url: data.url, prompt: data.prompt, service: data.service });
+      renderArtifacts();
+    }
+    scrollToBottom();
+    return;
+  }
+
+  if (data.event === 'agent-image-error') {
+    const skeletons = document.querySelectorAll(`[data-agent-id="${data.agentId}"] .agent-auto-img-skeleton`);
+    const skeleton = skeletons[skeletons.length - 1];
+    if (skeleton) skeleton.outerHTML = `<div style="padding:8px 10px;font-size:11px;color:var(--text3);">⚠️ Image render failed — ${escHtml(data.error || '')}</div>`;
     return;
   }
 

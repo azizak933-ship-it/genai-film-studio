@@ -824,6 +824,89 @@ function extractAndSaveInsights(agentId, userMsg, agentResponse, projectId) {
   }
 }
 
+// ── Level-3 Autonomous Image Generation ──────────────────────────────────────
+// Agents that auto-render images from their responses
+const IMAGE_AGENT_IDS = new Set([
+  'concept-artist', 'character-designer', 'production-designer',
+  'storyboard', 'ai-image-artist', 'image-pe', 'dop', 'cinematographer', 'shot-designer'
+]);
+
+// Style prefix per agent for better FLUX results
+const AGENT_IMAGE_STYLES = {
+  'concept-artist':       'concept art, matte painting, cinematic, detailed, ',
+  'character-designer':   'character design sheet, full body, concept art, detailed, ',
+  'production-designer':  'environment concept art, production design, cinematic set, ',
+  'storyboard':           'storyboard panel, pencil sketch, cinematic composition, ',
+  'ai-image-artist':      'cinematic film still, photorealistic, 8k, ',
+  'image-pe':             'cinematic photograph, professional, FLUX prompt render, ',
+  'dop':                  'cinematic lighting reference, film photography, ',
+  'cinematographer':      'cinematic frame, anamorphic lens, film grain, ',
+  'shot-designer':        'shot composition, storyboard, cinematic, ',
+};
+
+// System prompt hint injected for visual agents
+const AUTO_IMAGE_HINT = '\n\n[VISUAL RENDERING ACTIVE] When you describe key visual concepts (a scene, character, environment, lighting setup, or composition), include a [GENERATE_IMAGE: your detailed description with style, mood, lighting, camera angle] tag. Be specific and cinematic. Use at most 2 tags per response.';
+
+// Extract [GENERATE_IMAGE: ...] tags + heuristic visual sentence fallback
+function extractImagePrompts(text, maxImages = 2) {
+  const prompts = [];
+  const tagRegex = /\[GENERATE_IMAGE:\s*([^\]]{10,400})\]/gi;
+  let m;
+  while ((m = tagRegex.exec(text)) !== null) {
+    prompts.push(m[1].trim());
+    if (prompts.length >= maxImages) return prompts;
+  }
+  // Heuristic fallback: find visually descriptive sentences
+  if (prompts.length < maxImages) {
+    const visualKeywords = /\b(cinematic|scene|character|costume|color|palette|light|dark|shadow|mood|atmosphere|environment|set|location|fog|rain|interior|exterior|silhouette|texture|tone|hue|contrast|depth|neon|gothic|noir|surreal|gritty|lush|warm|cold|dusk|dawn|dramatic|soft|harsh)\b/i;
+    const lines = text.split('\n').map(l => l.replace(/^[#*\-•>\d.]+\s*/, '').replace(/\*\*/g, '').trim()).filter(l => l.length > 50 && l.length < 350);
+    for (const line of lines) {
+      if (visualKeywords.test(line)) {
+        prompts.push(line.slice(0, 300));
+        if (prompts.length >= maxImages) break;
+      }
+    }
+  }
+  return prompts;
+}
+
+// Generate images autonomously and stream back as SSE events
+async function autoGenerateImages(agentId, text, projectId, send, cfg) {
+  if (!cfg.hfToken?.trim()) return;
+  if (!IMAGE_AGENT_IDS.has(agentId)) return;
+  const prompts = extractImagePrompts(text, 2);
+  if (!prompts.length) return;
+  const stylePrefix = AGENT_IMAGE_STYLES[agentId] || 'cinematic, ';
+  for (const prompt of prompts) {
+    const fullPrompt = (stylePrefix + prompt).slice(0, 500);
+    send({ event: 'agent-image-start', agentId, prompt: fullPrompt });
+    try {
+      const r = await fetch('https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${cfg.hfToken.trim()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inputs: fullPrompt, parameters: { num_inference_steps: 4, width: 1024, height: 576 } }),
+        signal: AbortSignal.timeout(90000),
+      });
+      if (r.ok) {
+        const buf = await r.arrayBuffer();
+        const artDir = join(ARTIFACTS_DIR, projectId || 'global');
+        if (!existsSync(artDir)) mkdirSync(artDir, { recursive: true });
+        const filename = `${crypto.randomUUID()}.png`;
+        writeFileSync(join(artDir, filename), Buffer.from(buf));
+        const url = `/api/artifacts/${projectId || 'global'}/${filename}`;
+        send({ event: 'agent-image', agentId, url, prompt: fullPrompt, service: 'FLUX.1-schnell' });
+      } else {
+        const errTxt = await r.text().catch(() => '');
+        console.error('[AutoImg]', r.status, errTxt.slice(0, 120));
+        send({ event: 'agent-image-error', agentId, error: `Image failed (${r.status})` });
+      }
+    } catch (e) {
+      console.error('[AutoImg] error:', e.message);
+      send({ event: 'agent-image-error', agentId, error: e.message });
+    }
+  }
+}
+
 // ── Project State (Project Bible) ─────────────────────────────────────────────
 function loadProjectState(projectId) {
   const file = join(PROJECT_STATES_DIR, projectId + '.json');
@@ -2763,7 +2846,8 @@ async function streamAgentChat(agent, message, contextMessages, send, projectId,
   const projectStateCtx = buildProjectStateContext(projectId);
   const journalCtx = buildJournalContext(projectId);
   const notesCtx   = buildAgentNotesContext(projectId, agent.id);
-  const systemPrompt = searchCtx + kbCtx + notesCtx + agentMemCtx + journalCtx + skillsetCtx + memoryCtx + projectStateCtx + (agent.chatSystem || agent.systemPrompt || 'You are a helpful assistant.') + teamCtx;
+  const imageHint = IMAGE_AGENT_IDS.has(agent.id) ? AUTO_IMAGE_HINT : '';
+  const systemPrompt = searchCtx + kbCtx + notesCtx + agentMemCtx + journalCtx + skillsetCtx + memoryCtx + projectStateCtx + (agent.chatSystem || agent.systemPrompt || 'You are a helpful assistant.') + teamCtx + imageHint;
 
   // Vision: build multipart content for cloud APIs (OpenAI-compatible format)
   const imageAttachments = (attachmentImages || []).filter(a => a.type?.startsWith('image/') && a.base64);
@@ -2876,13 +2960,19 @@ async function streamAgentChat(agent, message, contextMessages, send, projectId,
     setImmediate(() => extractAndSaveInsights(agent.id, message, fullText, projectId));
   }
 
+  // Level-3: auto-generate images for visual agents in chat mode
+  if (fullText && IMAGE_AGENT_IDS.has(agent.id)) {
+    await autoGenerateImages(agent.id, fullText, projectId, send, loadConfig());
+  }
+
   return fullText;
 }
 
 // ── Stream a single agent (pipeline mode) ────────────────────────────────────
 async function streamAgentPipeline(agent, message, onChunk, projectId = null) {
   const agentMemCtx = buildAgentMemoryContext(agent.id, projectId);
-  const systemContent = agentMemCtx ? agentMemCtx + agent.pipelineSystem : agent.pipelineSystem;
+  const imageHint = IMAGE_AGENT_IDS.has(agent.id) ? AUTO_IMAGE_HINT : '';
+  const systemContent = (agentMemCtx || '') + agent.pipelineSystem + imageHint;
   const messages = [
     { role: 'system', content: systemContent },
     { role: 'user', content: message },
@@ -3954,6 +4044,11 @@ ${new URL(req.url, 'http://localhost').searchParams.get('error') ? '<script>docu
         outputs[agent.id] = fullText;
         completed++;
         send({ event: 'agent-done', agentId: agent.id, index: i });
+
+        // Level-3: auto-generate images for visual agents
+        if (fullText && IMAGE_AGENT_IDS.has(agent.id)) {
+          await autoGenerateImages(agent.id, fullText, projectId, send, loadConfig());
+        }
 
         chat.messages.push({
           id: crypto.randomUUID(), role: 'assistant',
