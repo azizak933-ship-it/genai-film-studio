@@ -5480,7 +5480,7 @@ Base all prompts strictly on THIS scene's script, shot list, and storyboard abov
     // Try HuggingFace FLUX.1-schnell (free tier — just needs a free HF token)
     if (!imgBase64 && cfg.hfToken) {
       try {
-        const r = await fetch('https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell', {
+        const r = await fetch('https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${cfg.hfToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ inputs: fullPrompt, parameters: { num_inference_steps: 4, width: 1024, height: 576 } }),
@@ -5491,8 +5491,11 @@ Base all prompts strictly on THIS scene's script, shot list, and storyboard abov
           imgBase64 = Buffer.from(buf).toString('base64');
           mimeType = 'image/jpeg';
           usedService = 'HuggingFace FLUX.1-schnell';
+        } else {
+          const errBody = await r.text().catch(() => '');
+          console.error('[HF] status', r.status, errBody.slice(0, 200));
         }
-      } catch (_) {}
+      } catch (hfErr) { console.error('[HF] fetch error:', hfErr.message); }
     }
 
     // Try Stability AI
