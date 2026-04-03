@@ -924,6 +924,35 @@ async function autoGenerateImages(agentId, text, projectId, send, cfg) {
       } catch (e) { console.error('[AutoImg:Together] error:', e.message); }
     }
 
+    // Fallback: Replicate Nano Banana Pro
+    if (!imgBuf && cfg.replicateKey?.trim()) {
+      try {
+        const r1 = await fetch('https://api.replicate.com/v1/models/google/nano-banana-pro/predictions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${cfg.replicateKey.trim()}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ input: { prompt: fullPrompt, aspect_ratio: '16:9', output_format: 'png' } }),
+          signal: AbortSignal.timeout(10000),
+        });
+        if (r1.ok) {
+          const pred = await r1.json();
+          for (let i = 0; i < 30; i++) {
+            await new Promise(r => setTimeout(r, 2000));
+            const r2 = await fetch(`https://api.replicate.com/v1/predictions/${pred.id}`, {
+              headers: { 'Authorization': `Bearer ${cfg.replicateKey.trim()}` }, signal: AbortSignal.timeout(10000),
+            });
+            if (r2.ok) {
+              const p = await r2.json();
+              if (p.status === 'succeeded' && p.output?.[0]) {
+                const imgResp = await fetch(p.output[0], { signal: AbortSignal.timeout(30000) });
+                if (imgResp.ok) { imgBuf = Buffer.from(await imgResp.arrayBuffer()); usedService = 'Replicate · Nano Banana Pro'; break; }
+              }
+              if (p.status === 'failed') break;
+            }
+          }
+        } else { console.error('[AutoImg:Replicate]', r1.status, (await r1.text().catch(() => '')).slice(0, 120)); }
+      } catch (e) { console.error('[AutoImg:Replicate] error:', e.message); }
+    }
+
     // Fallback: HuggingFace FLUX.1-schnell
     if (!imgBuf && cfg.hfToken?.trim()) {
       try {
@@ -5672,13 +5701,13 @@ Base all prompts strictly on THIS scene's script, shot list, and storyboard abov
         if (r.ok) { const d = await r.json(); imgBase64 = d.artifacts?.[0]?.base64; usedService = 'Stability AI'; }
       } catch (_) {}
     }
-    // Try Replicate (FLUX)
+    // Try Replicate (Nano Banana Pro — google/nano-banana-pro)
     if (!imgBase64 && cfg.replicateKey) {
       try {
-        const r1 = await fetch('https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions', {
+        const r1 = await fetch('https://api.replicate.com/v1/models/google/nano-banana-pro/predictions', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${cfg.replicateKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ input: { prompt: fullPrompt, num_outputs: 1, aspect_ratio: '16:9' } }),
+          body: JSON.stringify({ input: { prompt: fullPrompt, aspect_ratio: '16:9', output_format: 'png' } }),
           signal: AbortSignal.timeout(10000),
         });
         if (r1.ok) {
@@ -5693,13 +5722,15 @@ Base all prompts strictly on THIS scene's script, shot list, and storyboard abov
               const p = await r2.json();
               if (p.status === 'succeeded' && p.output?.[0]) {
                 const imgResp = await fetch(p.output[0], { signal: AbortSignal.timeout(30000) });
-                if (imgResp.ok) { const buf = await imgResp.arrayBuffer(); imgBase64 = Buffer.from(buf).toString('base64'); mimeType = 'image/webp'; usedService = 'Replicate FLUX'; break; }
+                if (imgResp.ok) { const buf = await imgResp.arrayBuffer(); imgBase64 = Buffer.from(buf).toString('base64'); mimeType = 'image/png'; usedService = 'Replicate · Nano Banana Pro'; break; }
               }
               if (p.status === 'failed') break;
             }
           }
+        } else {
+          console.error('[Replicate] status', r1.status, (await r1.text().catch(() => '')).slice(0, 200));
         }
-      } catch (_) {}
+      } catch (repErr) { console.error('[Replicate] error:', repErr.message); }
     }
     if (!imgBase64) { res.writeHead(502); res.end(JSON.stringify({ error: 'No image generation service available. Add a Together AI, HuggingFace, Stability AI, or Replicate API key in Settings.' })); return; }
     // Save artifact
