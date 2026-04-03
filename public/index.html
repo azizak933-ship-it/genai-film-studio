@@ -3863,11 +3863,14 @@ async function sendImagineCommand(prompt) {
     });
     const data = await r.json();
     const el = document.getElementById('imagine-result');
-    if (data.image) {
-      el.innerHTML = `<div style="margin-bottom:6px;font-size:11px;color:var(--text3);">🎨 ${escHtml(data.service || 'Image')} · ${escHtml(prompt)}</div><img src="data:${data.mimeType || 'image/jpeg'};base64,${data.image}" style="max-width:100%;border-radius:10px;display:block;" alt="Generated image">`;
-      if (data.url) { projectArtifacts.unshift({ type: 'image', url: data.url, prompt, service: data.service || 'Image' }); renderArtifacts(); }
+    if (data.url) {
+      el.innerHTML = `<div style="margin-bottom:6px;font-size:11px;color:var(--text3);">🎨 ${escHtml(data.service || 'Image')} · ${escHtml(prompt)}</div><img src="${escHtml(data.url)}" style="max-width:100%;border-radius:10px;display:block;cursor:pointer;" onclick="window.open(this.src,'_blank')" alt="Generated image">`;
+      projectArtifacts.unshift({ type: 'image', url: data.url, prompt, service: data.service || 'Image' });
+      renderArtifacts();
+    } else if (data.error) {
+      el.innerHTML = `<span style="color:var(--danger);">Image generation failed: ${escHtml(data.error)}</span>`;
     } else {
-      el.innerHTML = `<span style="color:var(--danger);">Image generation failed: ${escHtml(data.error || 'No image returned')}. Add a HuggingFace or Stability AI key in Settings.</span>`;
+      el.innerHTML = `<span style="color:var(--danger);">No image returned — check your HuggingFace token in Settings.</span>`;
     }
   } catch(e) {
     const el = document.getElementById('imagine-result');
