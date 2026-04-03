@@ -20,6 +20,8 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+      - key: TOGETHER_API_KEY
+        sync: false
 
       # ── Image Generation ──────────────────────────────────────────────
       - key: HF_TOKEN

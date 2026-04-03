@@ -155,6 +155,26 @@ const CLOUD_PROVIDERS = {
       ],
     },
   },
+  together: {
+    name: 'Together AI',
+    url: 'https://api.together.xyz/v1/chat/completions',
+    modelsUrl: 'https://api.together.xyz/v1/models',
+    modelPriority: {
+      quality: [
+        'meta-llama/Llama-3.3-70B-Instruct-Turbo',
+        'Qwen/Qwen2.5-72B-Instruct-Turbo',
+        'mistralai/Mistral-Small-24B-Instruct-2501',
+        'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',
+        'google/gemma-2-27b-it',
+      ],
+      fast: [
+        'meta-llama/Llama-3.1-8B-Instruct-Turbo',
+        'Qwen/Qwen2.5-7B-Instruct-Turbo',
+        'google/gemma-2-9b-it',
+        'meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo',
+      ],
+    },
+  },
 };
 
 // ── Model Discovery & Caching ─────────────────────────────────────────────────
@@ -313,6 +333,7 @@ function loadConfig() {
   if (process.env.ELEVENLABS_API_KEY) cfg.elevenLabsKey = process.env.ELEVENLABS_API_KEY;
   if (process.env.HF_TOKEN)           cfg.hfToken       = process.env.HF_TOKEN;
   if (process.env.ANTHROPIC_API_KEY)  cfg.claudeKey     = process.env.ANTHROPIC_API_KEY;
+  if (process.env.TOGETHER_API_KEY)   cfg.togetherKey   = process.env.TOGETHER_API_KEY;
   return cfg;
 }
 function saveConfig(cfg) { writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf8'); }
@@ -385,15 +406,16 @@ async function streamCloudAgent(agent, messages, send) {
   }
 
   // Build fallback chain: preferred provider first, then the rest
-  const ALL_PROVIDERS = ['google', 'groq', 'openrouter'];
+  const ALL_PROVIDERS = ['together', 'google', 'groq', 'openrouter'];
   const preferred = assignment.provider;
   const preferredTier = assignment.tier;
   const providerOrder = [preferred, ...ALL_PROVIDERS.filter(p => p !== preferred)];
 
   for (const providerName of providerOrder) {
     const provider = CLOUD_PROVIDERS[providerName];
-    const apiKey = providerName === 'groq' ? cfg.groqKey
-                 : providerName === 'google' ? cfg.googleKey
+    const apiKey = providerName === 'groq'      ? cfg.groqKey
+                 : providerName === 'google'    ? cfg.googleKey
+                 : providerName === 'together'  ? cfg.togetherKey
                  : cfg.openrouterKey;
 
     if (!apiKey || !apiKey.trim()) continue; // No key for this provider, skip
@@ -872,7 +894,8 @@ function extractImagePrompts(text, maxImages = 2) {
 
 // Generate images autonomously and stream back as SSE events
 async function autoGenerateImages(agentId, text, projectId, send, cfg) {
-  if (!cfg.hfToken?.trim()) return;
+  const hasImgProvider = cfg.togetherKey?.trim() || cfg.hfToken?.trim();
+  if (!hasImgProvider) return;
   if (!IMAGE_AGENT_IDS.has(agentId)) return;
   const prompts = extractImagePrompts(text, 2);
   if (!prompts.length) return;
@@ -880,29 +903,50 @@ async function autoGenerateImages(agentId, text, projectId, send, cfg) {
   for (const prompt of prompts) {
     const fullPrompt = (stylePrefix + prompt).slice(0, 500);
     send({ event: 'agent-image-start', agentId, prompt: fullPrompt });
-    try {
-      const r = await fetch('https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${cfg.hfToken.trim()}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inputs: fullPrompt, parameters: { num_inference_steps: 4, width: 1024, height: 576 } }),
-        signal: AbortSignal.timeout(90000),
-      });
-      if (r.ok) {
-        const buf = await r.arrayBuffer();
-        const artDir = join(ARTIFACTS_DIR, projectId || 'global');
-        if (!existsSync(artDir)) mkdirSync(artDir, { recursive: true });
-        const filename = `${crypto.randomUUID()}.png`;
-        writeFileSync(join(artDir, filename), Buffer.from(buf));
-        const url = `/api/artifacts/${projectId || 'global'}/${filename}`;
-        send({ event: 'agent-image', agentId, url, prompt: fullPrompt, service: 'FLUX.1-schnell' });
-      } else {
-        const errTxt = await r.text().catch(() => '');
-        console.error('[AutoImg]', r.status, errTxt.slice(0, 120));
-        send({ event: 'agent-image-error', agentId, error: `Image failed (${r.status})` });
-      }
-    } catch (e) {
-      console.error('[AutoImg] error:', e.message);
-      send({ event: 'agent-image-error', agentId, error: e.message });
+    let imgBuf = null, usedService = '';
+
+    // Try Together AI Nano Banana Pro first
+    if (!imgBuf && cfg.togetherKey?.trim()) {
+      try {
+        const r = await fetch('https://api.together.xyz/v1/images/generations', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${cfg.togetherKey.trim()}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'google/gemini-3-pro-image', prompt: fullPrompt, n: 1, width: 1024, height: 576, steps: 4, response_format: 'b64_json' }),
+          signal: AbortSignal.timeout(90000),
+        });
+        if (r.ok) {
+          const d = await r.json();
+          const b64 = d.data?.[0]?.b64_json;
+          if (b64) { imgBuf = Buffer.from(b64, 'base64'); usedService = 'Nano Banana Pro'; }
+        } else {
+          console.error('[AutoImg:Together]', r.status, (await r.text().catch(() => '')).slice(0, 120));
+        }
+      } catch (e) { console.error('[AutoImg:Together] error:', e.message); }
+    }
+
+    // Fallback: HuggingFace FLUX.1-schnell
+    if (!imgBuf && cfg.hfToken?.trim()) {
+      try {
+        const r = await fetch('https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${cfg.hfToken.trim()}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inputs: fullPrompt, parameters: { num_inference_steps: 4, width: 1024, height: 576 } }),
+          signal: AbortSignal.timeout(90000),
+        });
+        if (r.ok) { imgBuf = Buffer.from(await r.arrayBuffer()); usedService = 'FLUX.1-schnell'; }
+        else { console.error('[AutoImg:HF]', r.status, (await r.text().catch(() => '')).slice(0, 120)); }
+      } catch (e) { console.error('[AutoImg:HF] error:', e.message); }
+    }
+
+    if (imgBuf) {
+      const artDir = join(ARTIFACTS_DIR, projectId || 'global');
+      if (!existsSync(artDir)) mkdirSync(artDir, { recursive: true });
+      const filename = `${crypto.randomUUID()}.png`;
+      writeFileSync(join(artDir, filename), imgBuf);
+      const url = `/api/artifacts/${projectId || 'global'}/${filename}`;
+      send({ event: 'agent-image', agentId, url, prompt: fullPrompt, service: usedService });
+    } else {
+      send({ event: 'agent-image-error', agentId, error: 'Image generation failed' });
     }
   }
 }
@@ -2888,7 +2932,7 @@ async function streamAgentChat(agent, message, contextMessages, send, projectId,
   const assignment = AGENT_CLOUD[agent.id];
   // Check if ANY cloud provider has a key (not just preferred)
   const hasAnyCloudKey = assignment && (
-    cfg.groqKey?.trim() || cfg.googleKey?.trim() || cfg.openrouterKey?.trim()
+    cfg.togetherKey?.trim() || cfg.groqKey?.trim() || cfg.googleKey?.trim() || cfg.openrouterKey?.trim()
   );
   const hasPreferredKey = assignment && (
     (assignment.provider === 'groq' && cfg.groqKey?.trim()) ||
@@ -2988,7 +3032,7 @@ async function streamAgentPipeline(agent, message, onChunk, projectId = null) {
   const cfg = loadConfig();
   const assignment = AGENT_CLOUD[agent.id];
   const hasAnyCloudKey = assignment && (
-    cfg.claudeKey?.trim() ||
+    cfg.claudeKey?.trim() || cfg.togetherKey?.trim() ||
     (assignment.provider === 'groq' && cfg.groqKey?.trim()) ||
     (assignment.provider === 'google' && cfg.googleKey?.trim()) ||
     (assignment.provider === 'openrouter' && cfg.openrouterKey?.trim()) ||
@@ -3384,6 +3428,7 @@ ${new URL(req.url, 'http://localhost').searchParams.get('error') ? '<script>docu
       elevenLabsKey:  cfg.elevenLabsKey  ? '***' + cfg.elevenLabsKey.slice(-4)  : '',
       openaiTtsKey:   cfg.openaiTtsKey   ? '***' + cfg.openaiTtsKey.slice(-4)   : '',
       claudeKey:      cfg.claudeKey      ? '***' + cfg.claudeKey.slice(-4)      : '',
+      togetherKey:    cfg.togetherKey    ? '***' + cfg.togetherKey.slice(-4)    : '',
     }));
     return;
   }
@@ -3403,6 +3448,7 @@ ${new URL(req.url, 'http://localhost').searchParams.get('error') ? '<script>docu
     if (body.elevenLabsKey !== undefined) cfg.elevenLabsKey = body.elevenLabsKey.trim();
     if (body.openaiTtsKey  !== undefined) cfg.openaiTtsKey  = body.openaiTtsKey.trim();
     if (body.claudeKey     !== undefined) cfg.claudeKey     = body.claudeKey.trim();
+    if (body.togetherKey   !== undefined) cfg.togetherKey   = body.togetherKey.trim();
     saveConfig(cfg);
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true }));
@@ -3792,7 +3838,7 @@ ${new URL(req.url, 'http://localhost').searchParams.get('error') ? '<script>docu
     try {
       const threadCfg = loadConfig();
       const threadAssignment = AGENT_CLOUD[agent.id];
-      const threadHasCloud = threadAssignment && (threadCfg.claudeKey?.trim() || threadCfg.groqKey?.trim() || threadCfg.googleKey?.trim() || threadCfg.openrouterKey?.trim());
+      const threadHasCloud = threadAssignment && (threadCfg.claudeKey?.trim() || threadCfg.togetherKey?.trim() || threadCfg.groqKey?.trim() || threadCfg.googleKey?.trim() || threadCfg.openrouterKey?.trim());
       let usedCloud = false;
 
       if (threadHasCloud) {
@@ -3926,7 +3972,7 @@ ${new URL(req.url, 'http://localhost').searchParams.get('error') ? '<script>docu
     try {
       const contCfg = loadConfig();
       const contAssignment = AGENT_CLOUD[agent.id];
-      const contHasCloud = contAssignment && (contCfg.groqKey?.trim() || contCfg.googleKey?.trim() || contCfg.openrouterKey?.trim());
+      const contHasCloud = contAssignment && (contCfg.togetherKey?.trim() || contCfg.groqKey?.trim() || contCfg.googleKey?.trim() || contCfg.openrouterKey?.trim());
       let usedCloud = false;
 
       if (contHasCloud) {
@@ -4476,7 +4522,7 @@ Use bullet points. Start with a one-line headline. No intro pleasantries.` },
         // Try cloud first
         const nodeCfg = loadConfig();
         const nodeAssignment = AGENT_CLOUD[agent.id];
-        const nodeHasCloud = nodeAssignment && (nodeCfg.groqKey?.trim() || nodeCfg.googleKey?.trim() || nodeCfg.openrouterKey?.trim());
+        const nodeHasCloud = nodeAssignment && (nodeCfg.togetherKey?.trim() || nodeCfg.groqKey?.trim() || nodeCfg.googleKey?.trim() || nodeCfg.openrouterKey?.trim());
         let usedCloud = false;
 
         if (nodeHasCloud) {
@@ -5572,6 +5618,27 @@ Base all prompts strictly on THIS scene's script, shot list, and storyboard abov
     const fullPrompt = `${prompt}, ${style}`;
     let imgBase64 = null, mimeType = 'image/png', usedService = '';
 
+    // Try Together AI — Nano Banana Pro (google/gemini-3-pro-image)
+    if (!imgBase64 && cfg.togetherKey) {
+      try {
+        const r = await fetch('https://api.together.xyz/v1/images/generations', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${cfg.togetherKey.trim()}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'google/gemini-3-pro-image', prompt: fullPrompt, n: 1, width: 1024, height: 576, steps: 4, response_format: 'b64_json' }),
+          signal: AbortSignal.timeout(90000),
+        });
+        if (r.ok) {
+          const d = await r.json();
+          imgBase64 = d.data?.[0]?.b64_json;
+          mimeType = 'image/png';
+          usedService = 'Together AI · Nano Banana Pro';
+        } else {
+          const errBody = await r.text().catch(() => '');
+          console.error('[Together] status', r.status, errBody.slice(0, 200));
+        }
+      } catch (togetherErr) { console.error('[Together] fetch error:', togetherErr.message); }
+    }
+
     // Try HuggingFace FLUX.1-schnell (free tier — just needs a free HF token)
     if (!imgBase64 && cfg.hfToken) {
       try {
@@ -5634,7 +5701,7 @@ Base all prompts strictly on THIS scene's script, shot list, and storyboard abov
         }
       } catch (_) {}
     }
-    if (!imgBase64) { res.writeHead(502); res.end(JSON.stringify({ error: 'No image generation service available. Add a Stability AI or Replicate API key in settings.' })); return; }
+    if (!imgBase64) { res.writeHead(502); res.end(JSON.stringify({ error: 'No image generation service available. Add a Together AI, HuggingFace, Stability AI, or Replicate API key in Settings.' })); return; }
     // Save artifact
     const artId = crypto.randomUUID();
     const artDir = join(ARTIFACTS_DIR, pid || 'global');

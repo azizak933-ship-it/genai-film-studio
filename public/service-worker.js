@@ -1,4 +1,4 @@
-const CACHE_NAME = 'genai-film-v5';
+const CACHE_NAME = 'genai-film-v6';
 const STATIC_ASSETS = ['/manifest.json'];
 
 self.addEventListener('install', e => {

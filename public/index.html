@@ -3167,6 +3167,22 @@ button[onclick="newChat()"]:hover {
       <hr class="settings-divider" style="margin:18px 0 16px;">
       <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;">Output Generation</div>
 
+      <!-- Together AI — Nano Banana Pro image gen -->
+      <div class="settings-provider" style="border:1px solid rgba(99,102,241,0.35);background:rgba(99,102,241,0.06);margin-bottom:10px;">
+        <div class="settings-provider-header">
+          <span style="font-size:16px;">🍌</span>
+          <span class="settings-provider-name">Together AI</span>
+          <span class="settings-provider-badge" style="background:rgba(99,102,241,0.18);color:#818cf8;border-color:rgba(99,102,241,0.35);">Nano Banana Pro · Image + Chat</span>
+          <a href="https://api.together.ai/settings/api-keys" target="_blank" style="font-size:11px;color:#818cf8;margin-left:auto;">Get key →</a>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">Image gen: <b>google/gemini-3-pro-image</b> (Nano Banana Pro) &nbsp;|&nbsp; Chat: <b>Llama 3.3 70B Turbo</b>, Qwen 2.5 72B &amp; more</div>
+        <div class="settings-input-row">
+          <input class="settings-input" id="input-together" type="password" placeholder="your-together-api-key" autocomplete="off">
+          <button class="settings-save-btn" onclick="saveProviderKey('together')" style="background:#6366f1;">Save</button>
+        </div>
+        <div class="settings-status" id="status-together"></div>
+      </div>
+
       <!-- HuggingFace FREE image gen -->
       <div class="settings-provider" style="border:1px solid rgba(74,222,128,0.25);background:rgba(74,222,128,0.04);">
         <div class="settings-provider-header">
@@ -3895,7 +3911,7 @@ async function sendImagineCommand(prompt) {
     } else if (data.error) {
       el.innerHTML = `<span style="color:var(--danger);">Image generation failed: ${escHtml(data.error)}</span>`;
     } else {
-      el.innerHTML = `<span style="color:var(--danger);">No image returned — check your HuggingFace token in Settings.</span>`;
+      el.innerHTML = `<span style="color:var(--danger);">No image returned — add a Together AI or HuggingFace token in Settings.</span>`;
     }
   } catch(e) {
     const el = document.getElementById('imagine-result');
@@ -6595,6 +6611,10 @@ async function openSettings() {
     document.getElementById('input-claude').placeholder = providerConfig.claudeKey || 'sk-ant-...';
     document.getElementById('input-claude').value = '';
   }
+  if (document.getElementById('input-together')) {
+    document.getElementById('input-together').placeholder = providerConfig.togetherKey || 'your-together-api-key';
+    document.getElementById('input-together').value = '';
+  }
   document.getElementById('settings-modal').classList.add('open');
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
@@ -6604,9 +6624,9 @@ function closeSettings() {
 }
 
 async function saveProviderKey(provider) {
-  const inputId  = { groq: 'input-groq', google: 'input-google', openrouter: 'input-openrouter', tavily: 'input-tavily', jina: 'input-jina', searxng: 'input-searxng', stability: 'input-stability', replicate: 'input-replicate', openaiTts: 'input-openai-tts', elevenLabs: 'input-elevenlabs', hf: 'input-hf', claude: 'input-claude' }[provider];
-  const statusId = { groq: 'status-groq', google: 'status-google', openrouter: 'status-openrouter', tavily: 'status-tavily', claude: 'status-claude' }[provider];
-  const keyField = { groq: 'groqKey', google: 'googleKey', openrouter: 'openrouterKey', tavily: 'tavilyKey', jina: 'jinaKey', searxng: 'searxngUrl', stability: 'stabilityKey', replicate: 'replicateKey', openaiTts: 'openaiTtsKey', elevenLabs: 'elevenLabsKey', hf: 'hfToken', claude: 'claudeKey' }[provider];
+  const inputId  = { groq: 'input-groq', google: 'input-google', openrouter: 'input-openrouter', tavily: 'input-tavily', jina: 'input-jina', searxng: 'input-searxng', stability: 'input-stability', replicate: 'input-replicate', openaiTts: 'input-openai-tts', elevenLabs: 'input-elevenlabs', hf: 'input-hf', claude: 'input-claude', together: 'input-together' }[provider];
+  const statusId = { groq: 'status-groq', google: 'status-google', openrouter: 'status-openrouter', tavily: 'status-tavily', claude: 'status-claude', together: 'status-together' }[provider];
+  const keyField = { groq: 'groqKey', google: 'googleKey', openrouter: 'openrouterKey', tavily: 'tavilyKey', jina: 'jinaKey', searxng: 'searxngUrl', stability: 'stabilityKey', replicate: 'replicateKey', openaiTts: 'openaiTtsKey', elevenLabs: 'elevenLabsKey', hf: 'hfToken', claude: 'claudeKey', together: 'togetherKey' }[provider];
   const val = document.getElementById(inputId)?.value.trim();
   const statusEl = statusId ? document.getElementById(statusId) : null;
 
