@@ -5647,7 +5647,7 @@ Base all prompts strictly on THIS scene's script, shot list, and storyboard abov
     const fullPrompt = `${prompt}, ${style}`;
     let imgBase64 = null, mimeType = 'image/png', usedService = '';
 
-    // Try Together AI — Nano Banana Pro (google/gemini-3-pro-image)
+    // 1. Try Together AI — Nano Banana Pro (google/gemini-3-pro-image)
     if (!imgBase64 && cfg.togetherKey) {
       try {
         const r = await fetch('https://api.together.xyz/v1/images/generations', {
@@ -5659,8 +5659,8 @@ Base all prompts strictly on THIS scene's script, shot list, and storyboard abov
         if (r.ok) {
           const d = await r.json();
           imgBase64 = d.data?.[0]?.b64_json;
-          mimeType = 'image/png';
-          usedService = 'Together AI · Nano Banana Pro';
+          if (imgBase64) { mimeType = 'image/png'; usedService = 'Together AI · Nano Banana Pro'; }
+          else console.error('[Together] OK but no b64_json in response:', JSON.stringify(d).slice(0, 300));
         } else {
           const errBody = await r.text().catch(() => '');
           console.error('[Together] status', r.status, errBody.slice(0, 200));
@@ -5668,40 +5668,7 @@ Base all prompts strictly on THIS scene's script, shot list, and storyboard abov
       } catch (togetherErr) { console.error('[Together] fetch error:', togetherErr.message); }
     }
 
-    // Try HuggingFace FLUX.1-schnell (free tier — just needs a free HF token)
-    if (!imgBase64 && cfg.hfToken) {
-      try {
-        const r = await fetch('https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${cfg.hfToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ inputs: fullPrompt, parameters: { num_inference_steps: 4, width: 1024, height: 576 } }),
-          signal: AbortSignal.timeout(60000),
-        });
-        if (r.ok) {
-          const buf = await r.arrayBuffer();
-          imgBase64 = Buffer.from(buf).toString('base64');
-          mimeType = 'image/jpeg';
-          usedService = 'HuggingFace FLUX.1-schnell';
-        } else {
-          const errBody = await r.text().catch(() => '');
-          console.error('[HF] status', r.status, errBody.slice(0, 200));
-        }
-      } catch (hfErr) { console.error('[HF] fetch error:', hfErr.message); }
-    }
-
-    // Try Stability AI
-    if (!imgBase64 && cfg.stabilityKey) {
-      try {
-        const r = await fetch('https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${cfg.stabilityKey}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({ text_prompts: [{ text: fullPrompt, weight: 1 }], cfg_scale: 7, width: 1024, height: 576, samples: 1, steps: 30 }),
-          signal: AbortSignal.timeout(60000),
-        });
-        if (r.ok) { const d = await r.json(); imgBase64 = d.artifacts?.[0]?.base64; usedService = 'Stability AI'; }
-      } catch (_) {}
-    }
-    // Try Replicate (Nano Banana Pro — google/nano-banana-pro)
+    // 2. Try Replicate — Nano Banana Pro (google/nano-banana-pro)
     if (!imgBase64 && cfg.replicateKey) {
       try {
         const r1 = await fetch('https://api.replicate.com/v1/models/google/nano-banana-pro/predictions', {
@@ -5732,6 +5699,40 @@ Base all prompts strictly on THIS scene's script, shot list, and storyboard abov
         }
       } catch (repErr) { console.error('[Replicate] error:', repErr.message); }
     }
+
+    // 3. Try HuggingFace FLUX.1-schnell (free fallback)
+    if (!imgBase64 && cfg.hfToken) {
+      try {
+        const r = await fetch('https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${cfg.hfToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inputs: fullPrompt, parameters: { num_inference_steps: 4, width: 1024, height: 576 } }),
+          signal: AbortSignal.timeout(60000),
+        });
+        if (r.ok) {
+          const buf = await r.arrayBuffer();
+          imgBase64 = Buffer.from(buf).toString('base64');
+          mimeType = 'image/jpeg';
+          usedService = 'HuggingFace FLUX.1-schnell';
+        } else {
+          console.error('[HF] status', r.status, (await r.text().catch(() => '')).slice(0, 200));
+        }
+      } catch (hfErr) { console.error('[HF] fetch error:', hfErr.message); }
+    }
+
+    // 4. Try Stability AI (SDXL fallback)
+    if (!imgBase64 && cfg.stabilityKey) {
+      try {
+        const r = await fetch('https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${cfg.stabilityKey}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ text_prompts: [{ text: fullPrompt, weight: 1 }], cfg_scale: 7, width: 1024, height: 576, samples: 1, steps: 30 }),
+          signal: AbortSignal.timeout(60000),
+        });
+        if (r.ok) { const d = await r.json(); imgBase64 = d.artifacts?.[0]?.base64; usedService = 'Stability AI'; }
+      } catch (_) {}
+    }
+
     if (!imgBase64) { res.writeHead(502); res.end(JSON.stringify({ error: 'No image generation service available. Add a Together AI, HuggingFace, Stability AI, or Replicate API key in Settings.' })); return; }
     // Save artifact
     const artId = crypto.randomUUID();
